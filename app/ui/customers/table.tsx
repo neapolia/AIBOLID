@@ -2,7 +2,7 @@ import { lusitana } from "@/app/ui/fonts";
 import Search from "@/app/ui/search";
 import { FormattedProviders } from "@/app/lib/definitions";
 
-export default async function ProvidersTable({
+export default  function ProvidersTable({
   providers,
 }: {
   providers: FormattedProviders[];
