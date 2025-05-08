@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { fetchFilteredStorage } from "@/app/lib/data";
 import StorageTable from "@/app/ui/storage/table";
-import { auth } from '@/auth';
+import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {

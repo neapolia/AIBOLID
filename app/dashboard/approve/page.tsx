@@ -1,7 +1,7 @@
 'use client';
 
 import { fetchInvoices } from '@/app/lib/data';
-import { auth } from '@/auth';
+import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
 import ApproveTable from './approve-table';
 

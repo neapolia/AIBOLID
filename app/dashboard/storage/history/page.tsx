@@ -2,7 +2,7 @@
 
 import { getStorageHistory } from '@/app/lib/storage-actions';
 import { StorageHistoryRecord } from '@/app/lib/types';
-import { auth } from '@/auth';
+import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
