@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   title: "Склад",
 };
 
+export const runtime = 'nodejs';
+
 export default async function Page(props: {
   searchParams?: Promise<{ query?: string }>;
 }) {
