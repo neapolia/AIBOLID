@@ -10,24 +10,27 @@ export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }
   const handleStatusChange = async (id: string, status: boolean) => {
     setIsUpdating(true);
     try {
-      await updateInvoiceStatus(id, status, false);
+      // Передаем строку 'false', как ты уже исправил
+      await updateInvoiceStatus(id, status ? 'paid' : 'unpaid', 'false');
     } catch (error) {
       console.error('Error updating status:', error);
     } finally {
       setIsUpdating(false);
     }
   };
-
+  
   const handlePaymentStatusChange = async (id: string, paymentStatus: boolean) => {
     setIsUpdating(true);
     try {
-      await updateInvoiceStatus(id, true, paymentStatus);
+      // Преобразуем paymentStatus в строку
+      await updateInvoiceStatus(id, 'pending', paymentStatus ? 'paid' : 'unpaid');
     } catch (error) {
       console.error('Error updating payment status:', error);
     } finally {
       setIsUpdating(false);
     }
   };
+  
 
   if (!invoices || invoices.length === 0) {
     return (
