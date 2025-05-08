@@ -2,6 +2,9 @@ import { auth } from "./auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Явно указываем использование Node.js runtime
+export const runtime = 'nodejs';
+
 // Настраиваем matcher для middleware
 export const config = {
   matcher: [
