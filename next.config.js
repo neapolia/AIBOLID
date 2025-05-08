@@ -15,8 +15,14 @@ const nextConfig = {
     };
     return config;
   },
-  // Отключаем Edge Runtime глобально
-  runtime: 'nodejs',
+  // Отключаем Edge Runtime для всего приложения
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'aibolid.vercel.app']
+    },
+    // Отключаем Edge Runtime
+    runtime: 'nodejs'
+  },
   // Указываем, что все API роуты должны использовать Node.js runtime
   api: {
     runtime: 'nodejs'
