@@ -1,10 +1,12 @@
+// В файле status-button.tsx
+
 'use client';
 
 import { useState } from 'react';
 import { updateInvoiceStatus } from '@/app/lib/actions';
 
-type OrderStatus = 'created' | 'approved' | 'cancelled' | 'delivering' | 'delivered';
-type PaymentStatus = 'pending' | 'paid' | 'cancelled';
+export type OrderStatus = 'created' | 'approved' | 'cancelled' | 'delivering' | 'delivered';
+export type PaymentStatus = 'pending' | 'paid' | 'cancelled';
 
 export default function StatusButton({
   id,
@@ -70,4 +72,4 @@ export default function StatusButton({
       </select>
     </div>
   );
-} 
+}
