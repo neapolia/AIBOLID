@@ -34,37 +34,21 @@ export async function createInvoice(
 
 export async function updateInvoiceStatus(
   id: string,
-  status: boolean | null,
-  payment_status: boolean
+  status: string,
+  paymentStatus: string
 ) {
   try {
-    // Получаем текущий статус заказа
-    const currentInvoice = await sql`
-      SELECT status, payment_status, delivery_date
-      FROM polina_invoices
-      WHERE id = ${id}
-    `;
-
-    // Обновляем статус заказа
     await sql`
       UPDATE polina_invoices
-      SET status = ${status}, 
-          payment_status = ${payment_status},
-          delivery_date = ${status ? new Date().toISOString() : null}
+      SET status = ${status},
+          payment_status = ${paymentStatus}
       WHERE id = ${id}
     `;
 
-    // Если заказ оплачен и доставлен, обновляем склад
-    if (status && payment_status) {
-      await updateStorageFromInvoice(id);
-    }
-
-    revalidatePath('/invoices');
-    revalidatePath('/dashboard/approve');
-    revalidatePath('/storage');
-    return { message: 'Статус обновлен' };
+    revalidatePath('/dashboard');
+    return { message: 'Статус заказа обновлен' };
   } catch (error) {
     console.error('Error updating invoice status:', error);
-    return { message: 'Ошибка при обновлении статуса' };
+    return { message: 'Ошибка при обновлении статуса заказа' };
   }
 }
