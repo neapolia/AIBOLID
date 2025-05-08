@@ -3,6 +3,7 @@ import { authConfig } from "./auth.config";
 
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  providers: [], // Добавьте ваши провайдеры здесь
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
