@@ -1,6 +1,7 @@
+"use client";
+
 export const runtime = 'nodejs';
 
-"use client";
 import { signIn } from "next-auth/react"; // Импортируем функцию для входа
 import { useState } from "react";
 
