@@ -2,7 +2,7 @@ import { auth } from "./auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export default auth((req) => {
+export default auth((req: NextRequest & { auth?: { user?: { role?: string } } }) => {
   const isLoggedIn = !!req.auth;
   const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard");
   const isOnApprove = req.nextUrl.pathname.startsWith("/dashboard/approve");
@@ -26,4 +26,5 @@ export default auth((req) => {
 // Опционально: настройка путей, для которых middleware не будет выполняться
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  runtime: 'nodejs'
 }; 
