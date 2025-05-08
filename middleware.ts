@@ -1,36 +1,51 @@
-import { auth } from "./app/auth";
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 // Явно указываем использование Node.js runtime
 export const runtime = 'nodejs';
 
-// Настраиваем matcher для middleware
+// Конфигурация для middleware
 export const config = {
   matcher: [
-    // Исключаем API роуты и статические файлы
     "/((?!api|_next/static|_next/image|favicon.ico).*)"
   ]
 };
 
 // Middleware для проверки аутентификации
-export default auth((req: NextRequest & { auth?: { user?: { role?: string } } }) => {
-  const isLoggedIn = !!req.auth;
-  const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard");
-  const isOnApprove = req.nextUrl.pathname.startsWith("/dashboard/approve");
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const isAuth = !!token;
+    const isAuthPage = req.nextUrl.pathname.startsWith('/login');
 
-  if (isOnApprove) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", req.nextUrl));
+    if (isAuthPage) {
+      if (isAuth) {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+      return null;
     }
-    if (req.auth?.user?.role !== "director") {
-      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+
+    if (!isAuth) {
+      let from = req.nextUrl.pathname;
+      if (req.nextUrl.search) {
+        from += req.nextUrl.search;
+      }
+
+      return NextResponse.redirect(
+        new URL(`/login?from=${encodeURIComponent(from)}`, req.url)
+      );
     }
-  }
 
-  if (isOnDashboard && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
+    // Проверка роли для страницы approval
+    if (req.nextUrl.pathname.startsWith('/approval')) {
+      if (token?.role !== 'director') {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+    }
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token
+    },
   }
-
-  return NextResponse.next();
-});
+);

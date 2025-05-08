@@ -3,13 +3,33 @@ import { DefaultSession } from "next-auth";
 declare module "next-auth" {
   interface Session {
     user: {
-      role?: string;
-    } & DefaultSession["user"];
+      id: string;
+      role: "director" | "user";
+    } & DefaultSession["user"]
   }
 
   interface User {
-    role?: string;
+    role: "director" | "user";
   }
+}
+
+export type UserRole = "director" | "user";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Request {
+  id: string;
+  userId: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface StorageHistoryRecord {
