@@ -2,12 +2,18 @@ import { auth } from "./auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Явно указываем использование Node.js runtime
 export const runtime = 'nodejs';
 
+// Настраиваем matcher для middleware
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"]
+  matcher: [
+    // Исключаем API роуты и статические файлы
+    "/((?!api|_next/static|_next/image|favicon.ico).*)"
+  ]
 };
 
+// Middleware для проверки аутентификации
 export default auth((req: NextRequest & { auth?: { user?: { role?: string } } }) => {
   const isLoggedIn = !!req.auth;
   const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard");
