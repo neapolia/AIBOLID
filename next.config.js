@@ -15,8 +15,12 @@ const nextConfig = {
     };
     return config;
   },
-  // Отключаем Edge Runtime для API роутов
-  runtime: 'nodejs'
+  // Отключаем Edge Runtime глобально
+  runtime: 'nodejs',
+  // Отключаем Edge Runtime для всех API роутов
+  api: {
+    runtime: 'nodejs'
+  }
 };
 
 module.exports = nextConfig;
