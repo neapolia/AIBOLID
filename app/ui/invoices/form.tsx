@@ -20,7 +20,7 @@ export default function Form({
   onSubmit: (products: Record<string, number>) => void;
 }) {
   const [state, setState] = useState<Record<string, number>>({});
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // Получаем текущие параметры поиска
   const pathname = usePathname();
   const { replace } = useRouter();
 
@@ -28,22 +28,27 @@ export default function Form({
     setState({});
   }, [providerId]);
 
-  const params = new URLSearchParams(searchParams);
+  // Преобразуем searchParams в объект для работы с ним
+  const params = new URLSearchParams(searchParams.toString());
 
+  // Формируем опции для Select из списка поставщиков
   const providerOptions = providers.map((p) => ({
     value: p.id,
     label: p.name,
   }));
 
+  // Обработчик изменения поставщика
   const handleProviderChange = (value: string) => {
-    params.set("providerId", value);
-    replace(`${pathname}?${params.toString()}`);
+    params.set("providerId", value); // Обновляем параметры запроса
+    replace(`${pathname}?${params.toString()}`); // Обновляем URL с новыми параметрами
   };
 
+  // Обработчик изменения количества товара
   const onCountChange = (e: ChangeEvent<HTMLInputElement>) => {
     setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
   };
 
+  // Проверяем, нужно ли показывать кнопку отправки
   const isShowSubmitButton =
     Object.values(state).length &&
     Object.values(state)?.reduce((acc, v) => acc + v) >= 1;
@@ -60,7 +65,7 @@ export default function Form({
           placeholder="Выберите поставщика"
           value={providerOptions.find((o) => o.value === providerId)}
           isClearable
-          onChange={(v) => handleProviderChange(v?.value || "")}
+          onChange={(v: { value: string; label: string } | null) => handleProviderChange(v?.value || "")}
           options={providerOptions}
           isSearchable={false}
         />

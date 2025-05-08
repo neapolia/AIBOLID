@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   title: "Поставщики",
 };
 
-// Получение данных на сервере (если нужно использовать query)
+
 export async function getServerSideProps(context: { query: { query?: string } }) {
-  const query = context.query.query || ""; // Получаем query из URL, если есть
+  const query = context.query.query || ""; 
 
   // Получаем данные поставщиков
   const providers = await fetchFilteredProviders(query);
