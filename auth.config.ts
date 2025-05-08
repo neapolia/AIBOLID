@@ -1,10 +1,18 @@
-import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import type { URL } from "url";
+
+export const runtime = 'nodejs';
 
 export const authConfig = {
   providers: [
     Credentials({
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
       async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) return null;
+        
         // Здесь должна быть ваша логика проверки пользователя
         // Например, проверка в базе данных
         if (credentials.username === "director" && credentials.password === "director") {
@@ -31,7 +39,7 @@ export const authConfig = {
     signIn: "/login",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request: { nextUrl } }: { auth: any; request: { nextUrl: URL } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
       const isOnApprove = nextUrl.pathname.startsWith("/dashboard/approve");
@@ -48,4 +56,4 @@ export const authConfig = {
       return true;
     },
   },
-} satisfies NextAuthConfig; 
+}; 
