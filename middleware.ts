@@ -2,6 +2,11 @@ import { auth } from "./auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  runtime: 'nodejs'
+};
+
 export default auth((req: NextRequest & { auth?: { user?: { role?: string } } }) => {
   const isLoggedIn = !!req.auth;
   const isOnDashboard = req.nextUrl.pathname.startsWith("/dashboard");
@@ -21,10 +26,4 @@ export default auth((req: NextRequest & { auth?: { user?: { role?: string } } })
   }
 
   return NextResponse.next();
-});
-
-// Опционально: настройка путей, для которых middleware не будет выполняться
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-  runtime: 'nodejs'
-}; 
+}); 

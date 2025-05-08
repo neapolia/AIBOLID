@@ -14,7 +14,9 @@ const nextConfig = {
       perf_hooks: false
     };
     return config;
-  }
+  },
+  // Отключаем Edge Runtime для API роутов
+  runtime: 'nodejs'
 };
 
 module.exports = nextConfig;
