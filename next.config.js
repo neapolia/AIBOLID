@@ -14,6 +14,12 @@ const nextConfig = {
       perf_hooks: false
     };
     return config;
+  },
+  // Отключаем Edge Runtime глобально
+  runtime: 'nodejs',
+  // Указываем, что все API роуты должны использовать Node.js runtime
+  api: {
+    runtime: 'nodejs'
   }
 };
 
