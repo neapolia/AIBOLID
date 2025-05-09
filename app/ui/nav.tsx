@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { cookies } from 'next/headers';
 
 export default function Nav() {
   const router = useRouter();

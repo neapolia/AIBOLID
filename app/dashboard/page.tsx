@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const role = getCurrentRole();
+  const role = await getCurrentRole();
   
   if (!role) {
     redirect('/login');
