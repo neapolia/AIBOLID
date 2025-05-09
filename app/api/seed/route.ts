@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import bcrypt from "bcryptjs";
+import { providers, products, storage, invoices } from "../../lib/placeholder-data";
 
 const sql = neon(process.env.DATABASE_URL!);
 
+function isValidUUID(uuid: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuid);
+}
+
 export async function GET() {
   try {
-    // Хешируем пароли
+    // 1. Пользователи
     const directorPassword = await bcrypt.hash("director", 10);
     const userPassword = await bcrypt.hash("user", 10);
-
-    // Добавляем пользователей
     await sql`
       INSERT INTO polina_users (name, email, password, role)
       VALUES 
@@ -19,9 +22,58 @@ export async function GET() {
       ON CONFLICT (email) DO NOTHING;
     `;
 
-    return NextResponse.json({ message: "Users seeded successfully" }, { status: 200 });
+    // 2. Поставщики
+    for (const provider of providers) {
+      if (!isValidUUID(provider.id)) continue;
+      await sql`
+        INSERT INTO polina_providers (id, name, inn, phone, site)
+        VALUES (${provider.id}, ${provider.name}, ${provider.inn}, ${provider.phone}, ${provider.site})
+        ON CONFLICT (id) DO NOTHING;
+      `;
+    }
+
+    // 3. Продукты
+    for (const product of products) {
+      if (!isValidUUID(product.id) || !isValidUUID(product.provider_id)) continue;
+      await sql`
+        INSERT INTO polina_products (id, name, provider_id, price, article)
+        VALUES (${product.id}, ${product.name}, ${product.provider_id}, ${product.price}, ${product.article})
+        ON CONFLICT (id) DO NOTHING;
+      `;
+    }
+
+    // 4. Склад
+    for (const s of storage) {
+      if (!isValidUUID(s.id) || !isValidUUID(s.product_id)) continue;
+      await sql`
+        INSERT INTO polina_storage (id, product_id, count)
+        VALUES (${s.id}, ${s.product_id}, ${s.count})
+        ON CONFLICT (id) DO NOTHING;
+      `;
+    }
+
+    // 5. Накладные и их продукты
+    for (const invoice of invoices) {
+      if (!isValidUUID(invoice.provider_id)) continue;
+      const response = await sql`
+        INSERT INTO polina_invoices (created_at, delivery_date, provider_id, docs_url, status, payment_status)
+        VALUES (${invoice.created_at}, ${invoice.delivery_date}, ${invoice.provider_id}, ${invoice.docs_url}, ${invoice.status}, ${invoice.payment_status})
+        RETURNING id;
+      `;
+      const invoiceId = response[0]?.id;
+      if (!invoiceId) continue;
+      for (const od of invoice.order_details) {
+        if (!isValidUUID(od.product_id)) continue;
+        await sql`
+          INSERT INTO polina_invoices_products (product_id, invoice_id, count)
+          VALUES (${od.product_id}, ${invoiceId}, ${od.count})
+        `;
+      }
+    }
+
+    return NextResponse.json({ message: "All data seeded successfully" }, { status: 200 });
   } catch (error) {
-    console.error("Error seeding users:", error);
-    return NextResponse.json({ error: "Failed to seed users" }, { status: 500 });
+    console.error("Error seeding data:", error);
+    return NextResponse.json({ error: "Failed to seed data" }, { status: 500 });
   }
 } 
