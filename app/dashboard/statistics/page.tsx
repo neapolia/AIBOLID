@@ -1,6 +1,3 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -31,41 +28,15 @@ import { InvoicesTable } from '@/app/lib/definitions';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-export default function StatisticsPage() {
-  const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpenses[]>([]);
-  const [providerExpenses, setProviderExpenses] = useState<ProviderExpenses[]>([]);
-  const [topProducts, setTopProducts] = useState<ProductAnalytics[]>([]);
-  const [totalExpenses, setTotalExpenses] = useState(0);
-  const [invoices, setInvoices] = useState<InvoicesTable[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [monthly, providers, products, total, invoicesData] = await Promise.all([
-          getMonthlyExpenses(),
-          getProviderExpenses(),
-          getTopProducts(),
-          getTotalExpenses(),
-          fetchInvoices()
-        ]);
-        setMonthlyExpenses(monthly);
-        setProviderExpenses(providers);
-        setTopProducts(products);
-        setTotalExpenses(total);
-        setInvoices(invoicesData);
-      } catch (error) {
-        console.error('Error loading analytics/statistics data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  if (isLoading) {
-    return <div>Загрузка...</div>;
-  }
+export default async function StatisticsPage() {
+  // Получаем все данные на сервере
+  const [monthlyExpenses, providerExpenses, topProducts, totalExpenses, invoices] = await Promise.all([
+    getMonthlyExpenses(),
+    getProviderExpenses(),
+    getTopProducts(),
+    getTotalExpenses(),
+    fetchInvoices()
+  ]);
 
   // Статистика по накладным
   const totalInvoices = invoices.length;
