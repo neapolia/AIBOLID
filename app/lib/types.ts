@@ -1,18 +1,3 @@
-import { DefaultSession } from "next-auth";
-
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      role: "director" | "user";
-    } & DefaultSession["user"]
-  }
-
-  interface User {
-    role: "director" | "user";
-  }
-}
-
 export type UserRole = "director" | "user";
 
 export interface User {
