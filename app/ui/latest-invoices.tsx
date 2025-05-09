@@ -2,8 +2,6 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { lusitana } from "@/app/ui/fonts";
 import { fetchLatestInvoices } from "@/app/lib/data";
-import { InvoicesTable } from '@/app/lib/definitions';
-import StatusButton from './invoices/status-button';
 
 export default async function LatestInvoices() {
   const latestInvoices = await fetchLatestInvoices();
