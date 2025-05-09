@@ -4,24 +4,8 @@ import type { User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import { UserRole } from "./lib/types";
-
-// Временное хранилище пользователей (в реальном приложении будет база данных)
-const users = [
-  {
-    id: "1",
-    name: "Director",
-    email: "director@example.com",
-    password: "director", // В реальном приложении пароль будет хеширован
-    role: "director" as UserRole,
-  },
-  {
-    id: "2",
-    name: "User",
-    email: "user@example.com",
-    password: "user", // В реальном приложении пароль будет хеширован
-    role: "user" as UserRole,
-  },
-];
+import { sql } from "@vercel/postgres";
+import bcrypt from "bcrypt";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -36,9 +20,20 @@ export const authOptions: AuthOptions = {
           throw new Error("Необходимо указать email и пароль");
         }
 
-        const user = users.find(user => user.email === credentials.email);
+        const result = await sql`
+          SELECT * FROM polina_users 
+          WHERE email = ${credentials.email}
+        `;
 
-        if (!user || user.password !== credentials.password) {
+        const user = result.rows[0];
+
+        if (!user) {
+          throw new Error("Неверный email или пароль");
+        }
+
+        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+
+        if (!passwordMatch) {
           throw new Error("Неверный email или пароль");
         }
 
