@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { neon } from "@neondatabase/serverless";
 import bcrypt from "bcrypt";
+
+const sql = neon(process.env.DATABASE_URL!);
 
 export async function GET() {
   try {
