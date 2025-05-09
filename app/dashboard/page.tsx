@@ -1,10 +1,8 @@
-export const dynamic = 'force-dynamic';
 import { Metadata } from "next";
 import { fetchFilteredStorage } from "@/app/lib/data";
 import StorageTable from "@/app/ui/storage/table";
 import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
-
 
 export const metadata: Metadata = {
   title: "Склад",
@@ -25,7 +23,8 @@ export default async function Page(props: {
   const searchParams = await props.searchParams;
   const query = searchParams?.query || "";
 
-  const storage = await fetchFilteredStorage(query);
+  const storage = await fetchFilteredStorage(query) ?? [];
+
 
   return (
     <div className="w-full">
