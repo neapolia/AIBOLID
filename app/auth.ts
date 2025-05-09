@@ -72,7 +72,7 @@ export const authOptions: AuthOptions = {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 дней
   },
-  secret: process.env.NEXTAUTH_SECRET || "your-secret-key", // В реальном приложении используйте переменную окружения
+  secret: process.env.NEXTAUTH_SECRET || "npg_fZ6QgB0RuECP", 
 };
 
 export const { auth, signIn, signOut } = NextAuth(authOptions);
