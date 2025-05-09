@@ -1,3 +1,5 @@
+'use server';
+
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify, SignJWT, JWTPayload } from 'jose';
@@ -54,7 +56,7 @@ export async function login(email: string, password: string) {
     const isValid = user[0].password_hash === password;
     if (!isValid) return null;
 
-    const { password_hash, ...userWithoutPassword } = user[0];
+    const { password_hash: _, ...userWithoutPassword } = user[0];
     const userData: User = {
       id: userWithoutPassword.id,
       email: userWithoutPassword.email,
