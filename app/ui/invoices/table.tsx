@@ -34,9 +34,7 @@ export default function InvoicesTable({
                   </div>
                   <div className="flex justify-end gap-2">
                     <StatusButton 
-                      id={invoice.id}
                       currentStatus={invoice.status || 'created'}
-                      currentPaymentStatus={invoice.payment_status}
                     />
                   </div>
                 </div>
@@ -79,9 +77,7 @@ export default function InvoicesTable({
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <StatusButton 
-                      id={invoice.id}
                       currentStatus={invoice.status || 'created'}
-                      currentPaymentStatus={invoice.payment_status}
                     />
                   </td>
                 </tr>
