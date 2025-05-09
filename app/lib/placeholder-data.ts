@@ -1,5 +1,4 @@
-// This file contains placeholder data that you'll be replacing with real data in the Data Fetching chapter:
-// https://nextjs.org/learn/dashboard-app/fetching-data
+
 
 const providers = [
   {
@@ -111,70 +110,70 @@ const products = [
     article: "SHK001",
   },
   {
-    id: "g9ae78dc-9cf3-4098-8807-34bf5e4c21d3",
+    id: "09ae78dc-9cf3-4098-8807-34bf5e4c21d3",
     name: "Ремень ГРМ Gates",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442a",
     price: 2800,
     article: "TIM002",
   },
   {
-    id: "h9ae78dc-9cf3-4098-8807-34bf5e4c21d4",
+    id: "19ae78dc-9cf3-4098-8807-34bf5e4c21d4",
     name: "Тормозная жидкость DOT-4",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442b",
     price: 650,
     article: "BRF003",
   },
   {
-    id: "i9ae78dc-9cf3-4098-8807-34bf5e4c21d5",
+    id: "29ae78dc-9cf3-4098-8807-34bf5e4c21d5",
     name: "Аккумулятор Bosch S4",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442d",
     price: 8500,
     article: "BAT001",
   },
   {
-    id: "j9ae78dc-9cf3-4098-8807-34bf5e4c21d6",
+    id: "39ae78dc-9cf3-4098-8807-34bf5e4c21d6",
     name: "Шина летняя Michelin 205/55R16",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442e",
     price: 4500,
     article: "TIR001",
   },
   {
-    id: "k9ae78dc-9cf3-4098-8807-34bf5e4c21d7",
+    id: "49ae78dc-9cf3-4098-8807-34bf5e4c21d7",
     name: "Шина зимняя Bridgestone 205/55R16",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442e",
     price: 5200,
     article: "TIR002",
   },
   {
-    id: "l9ae78dc-9cf3-4098-8807-34bf5e4c21d8",
+    id: "59ae78dc-9cf3-4098-8807-34bf5e4c21d8",
     name: "Тормозной диск Brembo",
     provider_id: "d6e15727-9fe1-4961-8c5b-ea44a9bd81aa",
     price: 2800,
     article: "BRK124",
   },
   {
-    id: "m9ae78dc-9cf3-4098-8807-34bf5e4c21d9",
+    id: "69ae78dc-9cf3-4098-8807-34bf5e4c21d9",
     name: "Масло трансмиссионное 75W-90",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442b",
     price: 1200,
     article: "OIL002",
   },
   {
-    id: "n9ae78dc-9cf3-4098-8807-34bf5e4c21e0",
+    id: "79ae78dc-9cf3-4098-8807-34bf5e4c21e0",
     name: "Ремень генератора Gates",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442a",
     price: 1200,
     article: "TIM003",
   },
   {
-    id: "o9ae78dc-9cf3-4098-8807-34bf5e4c21e1",
+    id: "89ae78dc-9cf3-4098-8807-34bf5e4c21e1",
     name: "Стартер Bosch",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442a",
     price: 8500,
     article: "STR001",
   },
   {
-    id: "p9ae78dc-9cf3-4098-8807-34bf5e4c21e2",
+    id: "99ae78dc-9cf3-4098-8807-34bf5e4c21e2",
     name: "Генератор Valeo",
     provider_id: "3958dc9e-742f-4377-85e9-fec4b6a6442a",
     price: 12000,
