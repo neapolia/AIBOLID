@@ -1,8 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-export const runtime = 'nodejs';
-
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico).*)"
@@ -22,20 +20,7 @@ export default withAuth(
 
     // Если пользователь не авторизован и НЕ на странице логина — редирект на логин
     if (!isAuth && !isAuthPage) {
-      let from = req.nextUrl.pathname;
-      if (req.nextUrl.search) {
-        from += req.nextUrl.search;
-      }
-      return NextResponse.redirect(
-        new URL(`/login?from=${encodeURIComponent(from)}`, req.url)
-      );
-    }
-
-    // Проверка роли для страницы approval
-    if (req.nextUrl.pathname.startsWith('/approval')) {
-      if (token?.role !== 'director') {
-        return NextResponse.redirect(new URL('/', req.url));
-      }
+      return NextResponse.redirect(new URL('/login', req.url));
     }
 
     // Если всё ок — пропускаем дальше
