@@ -8,16 +8,16 @@ export const config = {
 };
 
 export function middleware(request: NextRequest) {
-  const role = request.cookies.get('userRole')?.value;
+  const email = request.cookies.get('userEmail')?.value;
 
-  // Если нет роли, перенаправляем на страницу входа
-  if (!role) {
+  // Если нет email, перенаправляем на страницу входа
+  if (!email) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Добавляем роль в заголовки для удобства
+  // Добавляем email в заголовки для удобства
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-user-role', role);
+  requestHeaders.set('x-user-email', email);
 
   return NextResponse.next({
     request: {

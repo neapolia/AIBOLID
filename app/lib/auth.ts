@@ -6,21 +6,18 @@ import postgres from 'postgres';
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
-export type UserRole = 'admin' | 'director';
-
-// Простая проверка логина и пароля
 export async function login(email: string, password: string) {
   try {
     const user = await sql`
-      SELECT id, email, role 
+      SELECT id, email 
       FROM polina_users 
       WHERE email = ${email} AND password_hash = ${password}
     `;
 
     if (!user.length) return null;
 
-    // Сохраняем только роль в куки
-    cookies().set('userRole', user[0].role, {
+    // Сохраняем только email в куки
+    cookies().set('userEmail', user[0].email, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -34,22 +31,16 @@ export async function login(email: string, password: string) {
   }
 }
 
-// Получить текущую роль пользователя
-export async function getCurrentRole() {
-  return cookies().get('userRole')?.value as UserRole | undefined;
+export async function getCurrentUser() {
+  return cookies().get('userEmail')?.value;
 }
 
-// Проверка доступа для защищенных маршрутов
-export async function requireAuth(request: NextRequest, allowedRoles?: UserRole[]) {
-  const role = request.cookies.get('userRole')?.value as UserRole;
+export async function requireAuth(request: NextRequest) {
+  const email = request.cookies.get('userEmail')?.value;
   
-  if (!role) {
+  if (!email) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    return NextResponse.redirect(new URL('/unauthorized', request.url));
-  }
-
-  return role;
+  return email;
 } 

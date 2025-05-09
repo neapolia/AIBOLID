@@ -6,8 +6,8 @@ export default function Nav() {
   const router = useRouter();
 
   const handleLogout = () => {
-    // Удаляем куки с ролью
-    document.cookie = 'userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Удаляем куки с email
+    document.cookie = 'userEmail=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     router.push('/login');
   };
 

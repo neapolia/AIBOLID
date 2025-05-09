@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormattedProviders, Product } from "@/app/lib/definitions";
 import { formatCurrency } from "@/app/lib/utils";
-import { Button } from "../button";
+import Button from "../button";
 
 export default function Form({
   providerId,

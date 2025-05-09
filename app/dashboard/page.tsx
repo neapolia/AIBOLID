@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getCurrentRole } from '../lib/auth';
+import { getCurrentUser } from '../lib/auth';
 import { redirect } from 'next/navigation';
 import Nav from '../ui/nav';
 
@@ -8,9 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const role = await getCurrentRole();
+  const email = await getCurrentUser();
   
-  if (!role) {
+  if (!email) {
     redirect('/login');
   }
 
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
           
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">
-              Добро пожаловать, {role === 'admin' ? 'Администратор' : 'Директор'}!
+              Добро пожаловать, {email}!
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
