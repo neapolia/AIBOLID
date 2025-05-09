@@ -8,21 +8,7 @@ import {
   Product,
 } from "./definitions";
 import { formatCurrency } from "./utils";
-import { Pool } from 'pg';
 
-// Проверка наличия строки подключения
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not defined');
-}
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Отключаем проверку SSL-сертификата
-  }
-});
-
-export default pool;
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
