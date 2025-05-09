@@ -11,7 +11,7 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const isAuth = !!token;
-    const isAuthPage = req.nextUrl.pathname.startsWith('/login');
+    const isAuthPage = req.nextUrl.pathname === '/login';
 
     // Если пользователь авторизован и на странице логина — редирект на главную
     if (isAuthPage && isAuth) {
@@ -28,7 +28,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token
+      authorized: ({ token }) => true // Разрешаем доступ к middleware всем
     },
   }
 );
