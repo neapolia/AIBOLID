@@ -27,7 +27,7 @@ export const authOptions: AuthOptions = {
           WHERE email = ${credentials.email}
         `;
 
-        const user = result.rows[0];
+        const user = result[0];
 
         if (!user) {
           throw new Error("Неверный email или пароль");

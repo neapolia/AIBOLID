@@ -1,4 +1,4 @@
-import postgres from "postgres";
+import { neon } from "@neondatabase/serverless";
 import {
   invoices,
   providers,
@@ -6,7 +6,7 @@ import {
   products,
 } from "../lib/placeholder-data";
 
-const sql = postgres(process.env.POSTGRES_URL!);
+const sql = neon(process.env.DATABASE_URL!);
 
 async function seedProviders() {
   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
