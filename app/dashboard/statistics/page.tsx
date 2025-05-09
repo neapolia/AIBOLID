@@ -19,6 +19,11 @@ import {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
+interface MonthlyData {
+  name: string;
+  value: number;
+}
+
 export default function StatisticsPage() {
   const [invoices, setInvoices] = useState<InvoicesTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +48,7 @@ export default function StatisticsPage() {
   }
 
   // Подготовка данных для графика по месяцам
-  const monthlyData = invoices.reduce((acc: any[], invoice) => {
+  const monthlyData = invoices.reduce((acc: MonthlyData[], invoice) => {
     const date = new Date(invoice.created_at);
     const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
     
