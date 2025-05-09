@@ -8,13 +8,20 @@ const sql = postgres(process.env.POSTGRES_URL!);
 
 export async function login(email: string, password: string) {
   try {
+    console.log('Attempting login with:', { email, password });
+    
     const user = await sql`
       SELECT id, email 
       FROM polina_users 
       WHERE email = ${email} AND password_hash = ${password}
     `;
 
-    if (!user.length) return null;
+    console.log('Query result:', user);
+
+    if (!user.length) {
+      console.log('No user found');
+      return null;
+    }
 
     // Сохраняем только email в куки
     cookies().set('userEmail', user[0].email, {
@@ -24,6 +31,7 @@ export async function login(email: string, password: string) {
       maxAge: 60 * 60 * 24, // 24 часа
     });
 
+    console.log('Login successful, cookie set');
     return user[0];
   } catch (error) {
     console.error('Login error:', error);

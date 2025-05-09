@@ -3,6 +3,7 @@ import { inter } from "@/app/ui/fonts";
 import { Metadata } from "next";
 import SideNav from "./ui/sidenav";
 import Providers from "./providers";
+import { runMigrations } from './lib/migrate';
 
 export const metadata: Metadata = {
   title: {
@@ -12,6 +13,9 @@ export const metadata: Metadata = {
   description: "The official Next.js Learn Dashboard built with App Router.",
   metadataBase: new URL("https://next-learn-dashboard.vercel.sh"),
 };
+
+// Запускаем миграции при старте
+runMigrations().catch(console.error);
 
 export default function RootLayout({
   children,
