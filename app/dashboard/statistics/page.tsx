@@ -26,6 +26,8 @@ import {
   ProviderExpenses,
   ProductAnalytics
 } from '@/app/lib/analytics';
+import { fetchInvoices } from '@/app/lib/data';
+import { InvoicesTable } from '@/app/lib/definitions';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -34,29 +36,30 @@ export default function StatisticsPage() {
   const [providerExpenses, setProviderExpenses] = useState<ProviderExpenses[]>([]);
   const [topProducts, setTopProducts] = useState<ProductAnalytics[]>([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [invoices, setInvoices] = useState<InvoicesTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [monthly, providers, products, total] = await Promise.all([
+        const [monthly, providers, products, total, invoicesData] = await Promise.all([
           getMonthlyExpenses(),
           getProviderExpenses(),
           getTopProducts(),
-          getTotalExpenses()
+          getTotalExpenses(),
+          fetchInvoices()
         ]);
-        
         setMonthlyExpenses(monthly);
         setProviderExpenses(providers);
         setTopProducts(products);
         setTotalExpenses(total);
+        setInvoices(invoicesData);
       } catch (error) {
-        console.error('Error loading analytics data:', error);
+        console.error('Error loading analytics/statistics data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
     loadData();
   }, []);
 
@@ -64,10 +67,36 @@ export default function StatisticsPage() {
     return <div>Загрузка...</div>;
   }
 
+  // Статистика по накладным
+  const totalInvoices = invoices.length;
+  const deliveredInvoices = invoices.filter(i => i.status === true).length;
+  const paidInvoices = invoices.filter(i => i.payment_status === true).length;
+  const inProgressInvoices = invoices.filter(i => i.status === false).length;
+
   return (
     <main className="p-6">
       <h1 className="text-2xl font-bold mb-6">Аналитика закупок</h1>
-      
+
+      {/* Карточки статистики */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500">Всего накладных</h3>
+          <p className="text-2xl font-bold">{totalInvoices}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500">Выполненные</h3>
+          <p className="text-2xl font-bold">{deliveredInvoices}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500">Оплаченные</h3>
+          <p className="text-2xl font-bold">{paidInvoices}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-gray-500">В процессе</h3>
+          <p className="text-2xl font-bold">{inProgressInvoices}</p>
+        </div>
+      </div>
+
       {/* Общая сумма расходов */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <h2 className="text-lg font-semibold mb-2">Общая сумма расходов</h2>
