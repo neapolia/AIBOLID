@@ -8,14 +8,6 @@ import {
   Product,
 } from "./definitions";
 import { formatCurrency } from "./utils";
-import { Pool } from 'pg';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-
-export default pool;
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -178,7 +170,6 @@ export async function fetchFilteredStorage(query: string) {
     return data;
   } catch (error) {
     console.error("DB (fetchFilteredStorage):", error);
-    return []; 
   }
 }
 
