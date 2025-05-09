@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
 import HistoryClient from './history-client';

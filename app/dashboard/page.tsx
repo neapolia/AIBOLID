@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Metadata } from "next";
 import { fetchFilteredStorage } from "@/app/lib/data";
 import StorageTable from "@/app/ui/storage/table";
