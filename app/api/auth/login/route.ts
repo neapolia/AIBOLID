@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { login } from '@/app/lib/auth';
-import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
