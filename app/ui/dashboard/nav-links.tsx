@@ -11,6 +11,7 @@ export default function NavLinks() {
     { name: 'Склад', href: '/dashboard/storage' },
     { name: 'Поставщики', href: '/dashboard/providers' },
     { name: 'Согласование', href: '/dashboard/approve' },
+    { name: 'Статистика', href: '/dashboard/statistics' },
   ];
 
   return (

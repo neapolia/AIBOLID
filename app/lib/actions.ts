@@ -13,7 +13,7 @@ export async function createInvoice(
   try {
     const response = await sql`
         INSERT INTO polina_invoices (created_at, delivery_date, provider_id, docs_url, status, payment_status)
-        VALUES (${new Date().toISOString()}, ${null}, ${providerId}, ${null}, ${false}, ${false})
+        VALUES (${new Date().toISOString()}, ${null}, ${providerId}, ${null}, 'created', 'pending')
         RETURNING id;
       `;
 

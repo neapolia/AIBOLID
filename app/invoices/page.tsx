@@ -1,6 +1,7 @@
 // app/invoices/page.tsx
 import Table from "@/app/ui/invoices/table";
 import { CreateInvoice } from "@/app/ui/invoices/buttons";
+import { ExportButtons } from "@/app/ui/invoices/export-buttons";
 import { lusitana } from "@/app/ui/fonts";
 import { Metadata } from "next";
 import { fetchInvoices } from "../lib/data";
@@ -10,25 +11,18 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  try {
-    const invoices = await fetchInvoices();
-    return (
-      <div className="w-full">
-        <div className="flex w-full items-center justify-between">
-          <h1 className={`${lusitana.className} text-2xl`}>Заказы</h1>
-        </div>
-        <div className="mt-4 flex justify-end md:mt-8">
+  const invoices = await fetchInvoices();
+
+  return (
+    <main className="flex flex-col gap-4 p-6">
+      <div className="flex justify-between items-center">
+        <h1 className={`${lusitana.className} text-2xl`}>Накладные</h1>
+        <div className="flex gap-4">
+          <ExportButtons invoices={invoices} />
           <CreateInvoice />
         </div>
-        <Table invoices={invoices} />
       </div>
-    );
-  } catch (error) {
-    console.error("Ошибка при загрузке инвойсов:", error);
-    return (
-      <div className="w-full">
-        <h1 className={`${lusitana.className} text-2xl`}>Ошибка загрузки данных</h1>
-      </div>
-    );
-  }
+      <Table invoices={invoices} />
+    </main>
+  );
 }
