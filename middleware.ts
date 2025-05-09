@@ -1,5 +1,5 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export const config = {
   matcher: [
@@ -7,28 +7,7 @@ export const config = {
   ]
 };
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const isAuth = !!token;
-    const isAuthPage = req.nextUrl.pathname === '/login';
-
-    // Если пользователь авторизован и на странице логина — редирект на главную
-    if (isAuthPage && isAuth) {
-      return NextResponse.redirect(new URL('/', req.url));
-    }
-
-    // Если пользователь не авторизован и НЕ на странице логина — редирект на логин
-    if (!isAuth && !isAuthPage) {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
-
-    // Если всё ок — пропускаем дальше
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => true // Разрешаем доступ к middleware всем
-    },
-  }
-);
+export function middleware(request: NextRequest) {
+  // Временно пропускаем все запросы без проверки авторизации
+  return NextResponse.next();
+}
