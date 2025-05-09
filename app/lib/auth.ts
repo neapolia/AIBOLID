@@ -35,12 +35,12 @@ export async function login(email: string, password: string) {
 }
 
 // Получить текущую роль пользователя
-export function getCurrentRole() {
+export async function getCurrentRole() {
   return cookies().get('userRole')?.value as UserRole | undefined;
 }
 
 // Проверка доступа для защищенных маршрутов
-export function requireAuth(request: NextRequest, allowedRoles?: UserRole[]) {
+export async function requireAuth(request: NextRequest, allowedRoles?: UserRole[]) {
   const role = request.cookies.get('userRole')?.value as UserRole;
   
   if (!role) {
