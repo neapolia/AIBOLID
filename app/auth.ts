@@ -78,4 +78,7 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || "your-secret-key", // В реальном приложении используйте переменную окружения
 };
 
-export const { auth, signIn, signOut } = NextAuth(authOptions); 
+export const { auth, signIn, signOut } = NextAuth(authOptions);
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
+
