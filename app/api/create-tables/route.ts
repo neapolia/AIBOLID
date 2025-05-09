@@ -8,6 +8,43 @@ export async function GET() {
     // Создаем расширение для UUID
     await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
 
+    // Создаем таблицу polina_providers
+    await sql`
+      CREATE TABLE IF NOT EXISTS polina_providers (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(255) NOT NULL,
+        inn VARCHAR(255) NOT NULL,
+        phone VARCHAR(255) NOT NULL,
+        site VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Создаем таблицу polina_products
+    await sql`
+      CREATE TABLE IF NOT EXISTS polina_products (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(255) NOT NULL,
+        provider_id UUID NOT NULL REFERENCES polina_providers(id),
+        price INTEGER NOT NULL,
+        article VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Создаем таблицу polina_storage
+    await sql`
+      CREATE TABLE IF NOT EXISTS polina_storage (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        product_id UUID NOT NULL REFERENCES polina_products(id),
+        count INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     // Создаем таблицу polina_users
     await sql`
       CREATE TABLE IF NOT EXISTS polina_users (
