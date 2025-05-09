@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 import { fetchFilteredStorage } from "@/app/lib/data";
 import StorageTable from "@/app/ui/storage/table";
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export const runtime = 'nodejs';
 
 export default async function Page(props: {
-  searchParams?: Promise<{ query?: string }>;
+  searchParams?: { query?: string };
 }) {
   const session = await auth();
   
