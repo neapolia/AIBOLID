@@ -1,36 +1,31 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-// Явно указываем использование Node.js runtime
 export const runtime = 'nodejs';
 
-// Конфигурация для middleware
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico).*)"
   ]
 };
 
-// Middleware для проверки аутентификации
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const isAuth = !!token;
     const isAuthPage = req.nextUrl.pathname.startsWith('/login');
 
-    if (isAuthPage) {
-      if (isAuth) {
-        return NextResponse.redirect(new URL('/', req.url));
-      }
-      return null;
+    // Если пользователь авторизован и на странице логина — редирект на главную
+    if (isAuthPage && isAuth) {
+      return NextResponse.redirect(new URL('/', req.url));
     }
 
-    if (!isAuth) {
+    // Если пользователь не авторизован и НЕ на странице логина — редирект на логин
+    if (!isAuth && !isAuthPage) {
       let from = req.nextUrl.pathname;
       if (req.nextUrl.search) {
         from += req.nextUrl.search;
       }
-
       return NextResponse.redirect(
         new URL(`/login?from=${encodeURIComponent(from)}`, req.url)
       );
@@ -42,6 +37,9 @@ export default withAuth(
         return NextResponse.redirect(new URL('/', req.url));
       }
     }
+
+    // Если всё ок — пропускаем дальше
+    return NextResponse.next();
   },
   {
     callbacks: {
