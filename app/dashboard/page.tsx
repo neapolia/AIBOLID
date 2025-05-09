@@ -5,6 +5,7 @@ import StorageTable from "@/app/ui/storage/table";
 import { auth } from '@/app/auth';
 import { redirect } from 'next/navigation';
 
+
 export const metadata: Metadata = {
   title: "Склад",
 };
