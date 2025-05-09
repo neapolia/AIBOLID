@@ -18,13 +18,9 @@ import {
   getMonthlyExpenses,
   getProviderExpenses,
   getTopProducts,
-  getTotalExpenses,
-  MonthlyExpenses,
-  ProviderExpenses,
-  ProductAnalytics
+  getTotalExpenses
 } from '@/app/lib/analytics';
 import { fetchInvoices } from '@/app/lib/data';
-import { InvoicesTable } from '@/app/lib/definitions';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
