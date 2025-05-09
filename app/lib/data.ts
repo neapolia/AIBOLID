@@ -86,13 +86,15 @@ export async function fetchInvoices() {
         i.docs_url,
         i.status,
         i.payment_status,
-        pp.name as provider_name
+        pp.name as provider_name,
+        COALESCE(SUM(p.price * ip.count), 0) as total_amount
       FROM polina_invoices as i
       LEFT JOIN polina_providers AS pp ON i.provider_id = pp.id
+      LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
+      LEFT JOIN polina_products p ON ip.product_id = p.id
+      GROUP BY i.id, i.created_at, i.delivery_date, i.docs_url, i.status, i.payment_status, pp.name
       ORDER BY i.created_at DESC
     `;
-
-    console.log(invoices);
 
     return invoices;
   } catch (error) {
