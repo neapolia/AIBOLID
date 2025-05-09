@@ -5,7 +5,7 @@ import type { JWT } from "next-auth/jwt";
 import type { Session } from "next-auth";
 import { UserRole } from "./lib/types";
 import { neon } from "@neondatabase/serverless";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const sql = neon(process.env.DATABASE_URL!);
 
