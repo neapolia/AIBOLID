@@ -1,17 +1,40 @@
 import { lusitana } from "@/app/ui/fonts";
 import Search from "@/app/ui/search";
 import { FormattedProviders } from "@/app/lib/definitions";
+import * as XLSX from 'xlsx';
 
-export default  function ProvidersTable({
+export default function ProvidersTable({
   providers,
 }: {
   providers: FormattedProviders[];
 }) {
+  const exportToExcel = () => {
+    const data = providers.map(provider => ({
+      'Наименование поставщика': provider.name,
+      'ИНН': provider.inn,
+      'Номер телефона': provider.phone,
+      'Сайт': provider.site
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Поставщики');
+    XLSX.writeFile(wb, 'providers.xlsx');
+  };
+
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} mb-8 text-xl md:text-2xl`}>
-        Поставщики
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className={`${lusitana.className} text-xl md:text-2xl`}>
+          Поставщики
+        </h1>
+        <button
+          onClick={exportToExcel}
+          className="rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600"
+        >
+          Экспорт в Excel
+        </button>
+      </div>
       <Search placeholder="Поиск поставщика..." />
       <div className="mt-6 flow-root">
         <div className="overflow-x-auto">
@@ -34,7 +57,6 @@ export default  function ProvidersTable({
                     </th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-gray-200 text-gray-900">
                   {providers.map((provider) => (
                     <tr key={provider.id} className="group">
