@@ -16,13 +16,14 @@ import {
   Line
 } from 'recharts';
 import { formatCurrency } from '@/app/lib/utils';
+import { MonthlyExpenses, ProviderExpenses, ProductAnalytics } from '@/app/lib/analytics';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 interface StatisticsClientProps {
-  monthlyExpenses: any[];
-  providerExpenses: any[];
-  topProducts: any[];
+  monthlyExpenses: MonthlyExpenses[];
+  providerExpenses: ProviderExpenses[];
+  topProducts: ProductAnalytics[];
   totalExpenses: number;
   totalInvoices: number;
   deliveredInvoices: number;
