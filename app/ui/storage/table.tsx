@@ -4,7 +4,6 @@ import { lusitana } from "@/app/ui/fonts";
 import Search from "@/app/ui/search";
 import { FormattedStorage } from "@/app/lib/definitions";
 import { formatCurrency } from "@/app/lib/utils";
-
 export default function StorageTable({
   storage,
 }: {

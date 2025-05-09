@@ -34,7 +34,6 @@ export type Revenue = {
 export type LatestInvoice = {
   id: string;
   name: string;
-  image_url: string;
   email: string;
   amount: string;
 };
@@ -44,14 +43,17 @@ export type LatestInvoiceRaw = Omit<LatestInvoice, "amount"> & {
   amount: number;
 };
 
+export type OrderStatus = 'created' | 'approved' | 'delivered';
+
 export type InvoicesTable = {
   id: string;
+  provider_name: string;
+  provider_email: string;
+  total_amount: number;
   created_at: string;
   delivery_date: string | null;
-  docs_url: string | null;
-  status: boolean | null;
-  payment_status: boolean | null;
-  provider_name: string;
+  status: OrderStatus | null;
+  payment_status: 'pending' | 'paid' | null;
 };
 
 export type FormattedProviders = {

@@ -14,10 +14,17 @@ const sql = postgres(process.env.POSTGRES_URL!);
 export async function fetchLatestInvoices() {
   try {
     const data = await sql<LatestInvoiceRaw[]>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
+      SELECT 
+        i.id,
+        pp.name,
+        pp.email,
+        SUM(p.price * ip.count) as amount
+      FROM polina_invoices i
+      JOIN polina_invoices_products ip ON i.id = ip.invoice_id
+      JOIN polina_products p ON ip.product_id = p.id
+      JOIN polina_providers pp ON p.provider_id = pp.id
+      GROUP BY i.id, pp.name, pp.email
+      ORDER BY i.created_at DESC
       LIMIT 5`;
 
     const latestInvoices = data.map((invoice) => ({
@@ -27,46 +34,45 @@ export async function fetchLatestInvoices() {
     return latestInvoices;
   } catch (error) {
     console.error("Database Error:", error);
-    throw new Error("Failed to fetch the latest invoices.");
+    return [];
   }
 }
 
 export async function fetchCardData() {
   try {
-    
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
+    const invoiceCountPromise = sql`SELECT COUNT(*) FROM polina_invoices`;
+    const providerCountPromise = sql`SELECT COUNT(*) FROM polina_providers`;
+    const invoiceStatusPromise = sql`
+      SELECT
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS "delivered",
+        SUM(CASE WHEN status = 'created' THEN 1 ELSE 0 END) AS "created"
+      FROM polina_invoices`;
 
     const data = await Promise.all([
       invoiceCountPromise,
-      customerCountPromise,
+      providerCountPromise,
       invoiceStatusPromise,
     ]);
 
     const numberOfInvoices = Number(data[0][0].count ?? "0");
-    const numberOfCustomers = Number(data[1][0].count ?? "0");
-    const totalPaidInvoices = formatCurrency(data[2][0].paid ?? "0");
-    const totalPendingInvoices = formatCurrency(data[2][0].pending ?? "0");
+    const numberOfProviders = Number(data[1][0].count ?? "0");
+    const deliveredInvoices = Number(data[2][0].delivered ?? "0");
+    const createdInvoices = Number(data[2][0].created ?? "0");
 
     return {
-      numberOfCustomers,
+      numberOfProviders,
       numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices,
+      deliveredInvoices,
+      createdInvoices,
     };
   } catch (error) {
-        console.error("DB (fetchCardData):", error);
-       // << важно: не валим билд >>
-     return {
-      numberOfCustomers: 0,
+    console.error("DB (fetchCardData):", error);
+    return {
+      numberOfProviders: 0,
       numberOfInvoices: 0,
-      totalPaidInvoices: "0",
-      totalPendingInvoices: "0",
-     };
+      deliveredInvoices: 0,
+      createdInvoices: 0,
+    };
   }
 }
 
@@ -90,7 +96,7 @@ export async function fetchInvoices() {
 
     return invoices;
   } catch (error) {
-    console.error("DB (fetchInvoices):", error);
+    console.error("DB (fetchInvoices):", error);
     return []; 
   }
 }
@@ -169,7 +175,7 @@ export async function fetchFilteredStorage(query: string) {
 
     return data;
   } catch (error) {
-    console.error("DB (fetchFilteredStorage):", error);
+    console.error("DB (fetchFilteredStorage):", error);
   }
 }
 

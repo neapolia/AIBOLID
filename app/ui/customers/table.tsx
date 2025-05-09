@@ -1,39 +1,20 @@
 import { lusitana } from "@/app/ui/fonts";
 import Search from "@/app/ui/search";
 import { FormattedProviders } from "@/app/lib/definitions";
-import * as XLSX from 'xlsx';
+import { ExportButton } from "./export-button";
 
 export default function ProvidersTable({
   providers,
 }: {
   providers: FormattedProviders[];
 }) {
-  const exportToExcel = () => {
-    const data = providers.map(provider => ({
-      'Наименование поставщика': provider.name,
-      'ИНН': provider.inn,
-      'Номер телефона': provider.phone,
-      'Сайт': provider.site
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Поставщики');
-    XLSX.writeFile(wb, 'providers.xlsx');
-  };
-
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-8">
         <h1 className={`${lusitana.className} text-xl md:text-2xl`}>
           Поставщики
         </h1>
-        <button
-          onClick={exportToExcel}
-          className="rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600"
-        >
-          Экспорт в Excel
-        </button>
+        <ExportButton providers={providers} />
       </div>
       <Search placeholder="Поиск поставщика..." />
       <div className="mt-6 flow-root">
