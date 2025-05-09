@@ -2,37 +2,33 @@
 
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import postgres from 'postgres';
 
-const sql = postgres(process.env.POSTGRES_URL!);
+// Тестовый пользователь
+const TEST_USER = {
+  email: 'test@example.com',
+  password: 'test123'
+};
 
 export async function login(email: string, password: string) {
   try {
     console.log('Attempting login with:', { email, password });
     
-    const user = await sql`
-      SELECT id, email 
-      FROM polina_users 
-      WHERE email = ${email} AND password_hash = ${password}
-    `;
+    // Простая проверка email и пароля
+    if (email === TEST_USER.email && password === TEST_USER.password) {
+      // Сохраняем email в куки
+      cookies().set('userEmail', email, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // 24 часа
+      });
 
-    console.log('Query result:', user);
-
-    if (!user.length) {
-      console.log('No user found');
-      return null;
+      console.log('Login successful, cookie set');
+      return { email };
     }
 
-    // Сохраняем только email в куки
-    cookies().set('userEmail', user[0].email, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24 часа
-    });
-
-    console.log('Login successful, cookie set');
-    return user[0];
+    console.log('Invalid credentials');
+    return null;
   } catch (error) {
     console.error('Login error:', error);
     return null;
