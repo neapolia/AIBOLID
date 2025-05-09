@@ -5,13 +5,9 @@
 import { OrderStatus } from "@/app/lib/definitions";
 
 export default function StatusButton({ 
-  id, 
-  currentStatus, 
-  currentPaymentStatus 
+  currentStatus
 }: { 
-  id: string;
   currentStatus: OrderStatus;
-  currentPaymentStatus: 'pending' | 'paid' | null;
 }) {
   const statusMap: Record<OrderStatus, { label: string; color: string }> = {
     created: { label: "Создан", color: "bg-gray-100 text-gray-800" },
