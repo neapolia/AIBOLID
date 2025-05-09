@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchInvoices } from '@/app/lib/data';
-import { InvoicesTable } from '@/app/lib/definitions';
 import {
   BarChart,
   Bar,
@@ -14,121 +12,107 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line
 } from 'recharts';
+import { formatCurrency } from '@/app/lib/utils';
+import {
+  getMonthlyExpenses,
+  getProviderExpenses,
+  getTopProducts,
+  getTotalExpenses,
+  MonthlyExpenses,
+  ProviderExpenses,
+  ProductAnalytics
+} from '@/app/lib/analytics';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
-interface MonthlyData {
-  name: string;
-  value: number;
-}
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function StatisticsPage() {
-  const [invoices, setInvoices] = useState<InvoicesTable[]>([]);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpenses[]>([]);
+  const [providerExpenses, setProviderExpenses] = useState<ProviderExpenses[]>([]);
+  const [topProducts, setTopProducts] = useState<ProductAnalytics[]>([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadInvoices = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchInvoices();
-        setInvoices(data);
+        const [monthly, providers, products, total] = await Promise.all([
+          getMonthlyExpenses(),
+          getProviderExpenses(),
+          getTopProducts(),
+          getTotalExpenses()
+        ]);
+        
+        setMonthlyExpenses(monthly);
+        setProviderExpenses(providers);
+        setTopProducts(products);
+        setTotalExpenses(total);
       } catch (error) {
-        console.error('Error loading invoices:', error);
+        console.error('Error loading analytics data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadInvoices();
+    loadData();
   }, []);
 
   if (isLoading) {
     return <div>Загрузка...</div>;
   }
 
-  // Подготовка данных для графика по месяцам
-  const monthlyData = invoices.reduce((acc: MonthlyData[], invoice) => {
-    const date = new Date(invoice.created_at);
-    const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
-    
-    const existingMonth = acc.find(item => item.name === monthYear);
-    if (existingMonth) {
-      existingMonth.value++;
-    } else {
-      acc.push({ name: monthYear, value: 1 });
-    }
-    
-    return acc;
-  }, []).sort((a, b) => {
-    const [aMonth, aYear] = a.name.split('/').map(Number);
-    const [bMonth, bYear] = b.name.split('/').map(Number);
-    return aYear === bYear ? aMonth - bMonth : aYear - bYear;
-  });
-
-  // Подготовка данных для круговой диаграммы статусов
-  const statusData = [
-    {
-      name: 'Выполненные',
-      value: invoices.filter(invoice => invoice.status).length
-    },
-    {
-      name: 'В процессе',
-      value: invoices.filter(invoice => !invoice.status).length
-    },
-    {
-      name: 'Оплаченные',
-      value: invoices.filter(invoice => invoice.payment_status).length
-    },
-    {
-      name: 'Ожидают оплаты',
-      value: invoices.filter(invoice => !invoice.payment_status).length
-    }
-  ];
-
   return (
     <main className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Статистика накладных</h1>
+      <h1 className="text-2xl font-bold mb-6">Аналитика закупок</h1>
       
+      {/* Общая сумма расходов */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h2 className="text-lg font-semibold mb-2">Общая сумма расходов</h2>
+        <p className="text-3xl font-bold text-blue-600">{formatCurrency(totalExpenses)}</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* График по месяцам */}
+        {/* График расходов по месяцам */}
         <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Количество накладных по месяцам</h2>
+          <h2 className="text-lg font-semibold mb-4">Расходы по месяцам</h2>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
+              <LineChart data={monthlyExpenses}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend />
-                <Bar dataKey="value" fill="#8884d8" name="Количество накладных" />
-              </BarChart>
+                <Line type="monotone" dataKey="total" stroke="#8884d8" name="Сумма расходов" />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Круговая диаграмма статусов */}
+        {/* Расходы по поставщикам */}
         <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Статусы накладных</h2>
+          <h2 className="text-lg font-semibold mb-4">Расходы по поставщикам</h2>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={statusData}
+                  data={providerExpenses}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
-                  dataKey="value"
+                  dataKey="total"
                 >
-                  {statusData.map((entry, index) => (
+                  {providerExpenses.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -136,23 +120,49 @@ export default function StatisticsPage() {
         </div>
       </div>
 
-      {/* Общая статистика */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Всего накладных</h3>
-          <p className="text-2xl font-bold">{invoices.length}</p>
+      {/* Топ товаров */}
+      <div className="mt-6 bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4">Топ товаров по количеству закупок</h2>
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={topProducts}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+              <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="totalAmount" fill="#8884d8" name="Общая сумма" />
+              <Bar yAxisId="right" dataKey="totalQuantity" fill="#82ca9d" name="Количество" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Выполненные</h3>
-          <p className="text-2xl font-bold">{invoices.filter(invoice => invoice.status).length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Оплаченные</h3>
-          <p className="text-2xl font-bold">{invoices.filter(invoice => invoice.payment_status).length}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">В процессе</h3>
-          <p className="text-2xl font-bold">{invoices.filter(invoice => !invoice.status).length}</p>
+      </div>
+
+      {/* Таблица с детальной информацией о товарах */}
+      <div className="mt-6 bg-white p-4 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-4">Детальная информация о товарах</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Товар</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Количество</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Общая сумма</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Средняя цена</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {topProducts.map((product) => (
+                <tr key={product.name}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.totalQuantity}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.totalAmount)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.averagePrice)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </main>
