@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import postgres from "postgres";
+import { neon } from "@neondatabase/serverless";
 
-
-const sql = postgres(process.env.POSTGRES_URL!);
+const sql = neon(process.env.DATABASE_URL!); 
 
 export async function createInvoice(
   providerId: string,
