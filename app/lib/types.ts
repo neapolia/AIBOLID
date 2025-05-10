@@ -18,11 +18,78 @@ export interface Request {
 }
 
 export interface StorageHistoryRecord {
-  id: number;
-  product_name: string;
-  article: string;
+  id: string;
+  product_id: string;
   count: number;
   operation: 'add' | 'remove';
-  invoice_id: string | null;
   created_at: string;
+  product_name?: string;
+  article?: string;
+  invoice_id?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  article: string;
+  price: number;
+  count: number;
+  provider_id: string;
+  provider_name: string;
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  contact_info?: string;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  created_at: string;
+  delivery_date: string | null;
+  provider_id: string;
+  docs_url: string | null;
+  status: 'pending' | 'delivered' | 'closed';
+  payment_status: 'pending' | 'paid';
+  is_auto_order: boolean;
+}
+
+export interface InvoiceProduct {
+  id: string;
+  invoice_id: string;
+  product_id: string;
+  count: number;
+  price: number;
+  product_name?: string;
+  article?: string;
+}
+
+export interface StorageAnalytics {
+  totalProducts: number;
+  totalValue: number;
+  lowStockProducts: {
+    id: string;
+    name: string;
+    article: string;
+    count: number;
+  }[];
+  topProducts: {
+    id: string;
+    name: string;
+    article: string;
+    count: number;
+  }[];
+  providerDistribution: {
+    provider_id: string;
+    provider_name: string;
+    productCount: number;
+    totalValue: number;
+  }[];
+  monthlyMovements: {
+    month: string;
+    additions: number;
+    removals: number;
+  }[];
 } 

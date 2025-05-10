@@ -32,6 +32,9 @@ export default function ApproveTable({ invoices }: ApproveTableProps) {
   const handleViewDetails = async (invoice: Invoice) => {
     try {
       const response = await fetch(`/api/invoices/${invoice.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice details');
+      }
       const data = await response.json();
       setSelectedInvoice(data);
       setIsModalOpen(true);
@@ -70,7 +73,7 @@ export default function ApproveTable({ invoices }: ApproveTableProps) {
     if (status === 'closed' && paymentStatus === 'paid') {
       return 'Закрыт и оплачен';
     } else if (status === 'delivered') {
-      return 'Доставлен';
+      return paymentStatus === 'paid' ? 'Доставлен и оплачен' : 'Доставлен';
     } else if (paymentStatus === 'paid') {
       return 'Оплачен';
     }

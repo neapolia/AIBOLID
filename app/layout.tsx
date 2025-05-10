@@ -3,6 +3,7 @@ import { inter } from "@/app/ui/fonts";
 import { Metadata } from "next";
 import SideNav from "./ui/sidenav";
 import Providers from "./providers";
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: {
@@ -30,6 +31,7 @@ export default function RootLayout({
             </div>
           </div>
         </Providers>
+        <Toaster />
       </body>
     </html>
   );

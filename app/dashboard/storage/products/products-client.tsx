@@ -1,151 +1,197 @@
 'use client';
 
-import { getProducts } from '@/app/lib/storage-actions';
 import { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
+import { Product, StorageAnalytics } from '@/app/lib/types';
+import { getProducts, fetchFilteredStorage, updateProductCount } from '@/app/lib/storage-actions';
+import { getStorageAnalytics } from '@/app/lib/storage-analytics';
+import StorageAnalyticsClient from '../analytics/storage-analytics-client';
+import { formatCurrency } from '@/app/lib/utils';
+import { Input } from "@/app/ui/input";
+import Button from "@/app/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/ui/table";
+import { toast } from "sonner";
 
-interface Product {
-  id: string;
-  name: string;
-  article: string;
-  price: number;
-  provider_id: string;
-  count: number;
-}
-
-export default function ProductsClient() {
+export default function StorageClient() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [analytics, setAnalytics] = useState<StorageAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [newCount, setNewCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadProducts();
+    const loadData = async () => {
+      try {
+        const [productsData, analyticsData] = await Promise.all([
+          getProducts(),
+          getStorageAnalytics()
+        ]);
+        setProducts(productsData);
+        setAnalytics(analyticsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const loadProducts = async () => {
-    setIsLoading(true);
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      const filteredProducts = await fetchFilteredStorage(query);
+      setProducts(filteredProducts);
+    } else {
+      const allProducts = await getProducts();
+      setProducts(allProducts);
+    }
+  };
+
+  const startEditing = (product: Product) => {
+    setEditingProduct(product.id);
+    setNewCount(product.count);
     setError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingProduct(null);
+    setNewCount(0);
+    setError(null);
+  };
+
+  const handleCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setNewCount(value);
+      setError(null);
+    } else {
+      setError('Количество должно быть положительным числом');
+    }
+  };
+
+  const adjustCount = (amount: number) => {
+    const newValue = newCount + amount;
+    if (newValue >= 0) {
+      setNewCount(newValue);
+      setError(null);
+    }
+  };
+
+  const handleCountUpdate = async (productId: string, newCount: number) => {
     try {
-      console.log('Loading products...');
+      setError(null);
+      await updateProductCount(productId, newCount);
+      await loadProducts();
+      toast.success("Количество успешно обновлено");
+    } catch (err) {
+      setError("Ошибка при обновлении количества");
+      toast.error("Не удалось обновить количество");
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
       const data = await getProducts();
-      console.log('Received data:', data);
-      
-      if (!data) {
-        throw new Error('No data received from server');
-      }
-      
       setProducts(data);
-    } catch (error) {
-      console.error('Error in loadProducts:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load products');
+    } catch (err) {
+      setError("Ошибка при загрузке данных");
+      toast.error("Не удалось загрузить данные о продуктах");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const exportToExcel = () => {
-    const data = products.map(product => ({
-      'Товар': product.name,
-      'Артикул': product.article,
-      'Цена': product.price,
-      'Количество': product.count
-    }));
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Загрузка...</div>;
+  }
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Склад');
-    XLSX.writeFile(wb, 'storage.xlsx');
-  };
-
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.article.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={loadProducts}>Повторить</Button>
+      </div>
+    );
+  }
 
   return (
-    <main className="p-6">
-      <h1 className="mb-4 text-xl md:text-2xl">Склад</h1>
-      
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <p className="font-bold">Ошибка:</p>
-          <p>{error}</p>
-          <button
-            onClick={loadProducts}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Попробовать снова
-          </button>
-        </div>
-      )}
-      
-      <div className="mb-4 flex flex-wrap gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700">Поиск</label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Поиск по названию или артикулу..."
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-        <div className="flex items-end">
-          <button
-            onClick={exportToExcel}
-            disabled={isLoading || products.length === 0}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-          >
-            Экспорт в Excel
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 flow-root">
-        <div className="inline-block min-w-full align-middle">
-          <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
-            {isLoading ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500">Загрузка данных...</p>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500">Нет данных для отображения</p>
-              </div>
-            ) : (
-              <table className="min-w-full text-gray-900">
-                <thead className="rounded-lg text-left text-sm font-normal">
-                  <tr>
-                    <th scope="col" className="px-4 py-5 font-medium">Товар</th>
-                    <th scope="col" className="px-4 py-5 font-medium">Артикул</th>
-                    <th scope="col" className="px-4 py-5 font-medium">Цена</th>
-                    <th scope="col" className="px-4 py-5 font-medium">Количество</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="w-full border-b py-3 text-sm">
-                      <td className="whitespace-nowrap px-3 py-3">{product.name}</td>
-                      <td className="whitespace-nowrap px-3 py-3">{product.article}</td>
-                      <td className="whitespace-nowrap px-3 py-3">{product.price} ₽</td>
-                      <td className="whitespace-nowrap px-3 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          product.count <= 5 ? 'bg-red-100 text-red-800' :
-                          product.count <= 10 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {product.count}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Склад</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Input
+              placeholder="Поиск по названию или артикулу..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleSearch(e.target.value);
+              }}
+              className="max-w-sm"
+            />
           </div>
-        </div>
-      </div>
-    </main>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Название</TableHead>
+                  <TableHead>Артикул</TableHead>
+                  <TableHead>Цена</TableHead>
+                  <TableHead>Количество</TableHead>
+                  <TableHead>Поставщик</TableHead>
+                  <TableHead>Действия</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell>{product.article}</TableCell>
+                    <TableCell>{product.price} ₽</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          value={product.count}
+                          onChange={(e) => {
+                            const newCount = parseInt(e.target.value);
+                            if (!isNaN(newCount) && newCount >= 0) {
+                              handleCountUpdate(product.id, newCount);
+                            }
+                          }}
+                          className="w-20"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>{product.provider_name}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newCount = product.count + 1;
+                          handleCountUpdate(product.id, newCount);
+                        }}
+                      >
+                        +1
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

@@ -41,11 +41,11 @@ export default function HistoryClient() {
     setIsLoading(true);
     setError(null);
     try {
-      const filteredHistory = await getStorageHistory(undefined, startDate, endDate);
+      const filteredHistory = await getStorageHistory();
       setHistory(filteredHistory);
     } catch (error) {
       console.error('Error in handleFilter:', error);
-      setError(error instanceof Error ? error.message : 'Failed to filter history');
+      setError('Ошибка при загрузке истории');
     } finally {
       setIsLoading(false);
     }

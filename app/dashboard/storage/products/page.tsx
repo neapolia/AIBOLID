@@ -1,5 +1,7 @@
 import ProductsClient from './products-client';
 
-export default function ProductsPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function ProductsPage() {
   return <ProductsClient />;
 } 
