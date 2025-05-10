@@ -154,10 +154,13 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
         i.status,
         i.payment_status,
         p.name as provider_name,
-        i.total_amount
+        COALESCE(SUM(ip.count * pr.price), 0) as total_amount
       FROM polina_invoices i
       LEFT JOIN polina_providers p ON i.provider_id = p.id
+      LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
+      LEFT JOIN polina_products pr ON ip.product_id = pr.id
       WHERE i.id = ${id}
+      GROUP BY i.id, i.created_at, i.status, i.payment_status, p.name
     `;
 
     if (!invoice[0]) {
@@ -166,15 +169,15 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
 
     const items = await sql`
       SELECT 
-        pi.id,
-        pi.product_id,
+        ip.id,
+        ip.product_id,
         p.name,
         p.article,
-        pi.count,
+        ip.count,
         p.price
-      FROM polina_invoice_items pi
-      LEFT JOIN polina_products p ON pi.product_id = p.id
-      WHERE pi.invoice_id = ${id}
+      FROM polina_invoices_products ip
+      LEFT JOIN polina_products p ON ip.product_id = p.id
+      WHERE ip.invoice_id = ${id}
     `;
 
     return {
@@ -184,14 +187,14 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
       payment_status: invoice[0].payment_status,
       provider_name: invoice[0].provider_name,
       total_amount: Number(invoice[0].total_amount),
-      products: items.map(item => ({
+      items: items.map(item => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),
         count: Number(item.count),
         price: Number(item.price)
       })),
-      items: items.map(item => ({
+      products: items.map(item => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),

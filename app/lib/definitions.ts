@@ -98,6 +98,7 @@ export type InvoiceDetails = {
   items: {
     id: string;
     name: string;
+    article: string;
     count: number;
     price: number;
   }[];

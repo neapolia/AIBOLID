@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ChangeEvent, useEffect, useState } from "react";
-import Select from "react-select";
+import { Select } from "@/app/ui/select";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormattedProviders, Product } from "@/app/lib/definitions";
@@ -9,45 +9,54 @@ import { formatCurrency } from "@/app/lib/utils";
 import Button from "../button";
 
 type ProviderOption = {
-  value: string;
-  label: string;
+  id: string;
+  name: string;
 };
 
-export default function Form({
-  providerId,
-  providers,
-  products,
-  onSubmit,
-  isSubmitting,
-}: {
-  products: Product[] | null;
+type StorageItem = {
+  id: string;
+  name: string;
+  article: string;
+  count: number;
+  price: number;
+};
+
+type MaterialOption = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+interface FormProps {
   providerId: string | null;
-  providers: Omit<FormattedProviders, "inn" | "phone" | "site">[];
+  providers: ProviderOption[];
+  products: Product[] | null;
   onSubmit: (products: Record<string, number>) => void;
-  isSubmitting?: boolean;
-}) {
-  const [state, setState] = useState<Record<string, number>>({});
+  isSubmitting: boolean;
+}
+
+export default function Form({ providerId, providers, products, onSubmit, isSubmitting }: FormProps) {
+  const [selectedMaterials, setSelectedMaterials] = useState<Record<string, number>>({});
+  const [customMaterials, setCustomMaterials] = useState<MaterialOption[]>([]);
+  const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
+  const [selectedMaterial, setSelectedMaterial] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
 
   useEffect(() => {
-    setState({});
+    setSelectedMaterials({});
+    setError(null);
   }, [providerId]);
 
   const params = new URLSearchParams(searchParams.toString());
 
-  const providerOptions = providers.map((p) => ({
-    value: p.id,
-    label: p.name,
-  }));
-
-  const selectedProvider = providerId ? providerOptions.find((o) => o.value === providerId) : null;
-
-  const handleProviderChange = (option: ProviderOption | null) => {
-    if (option) {
-      params.set("providerId", option.value);
+  const handleProviderChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const newProviderId = e.target.value;
+    if (newProviderId) {
+      params.set("providerId", newProviderId);
       replace(`${pathname}?${params.toString()}`);
     } else {
       params.delete("providerId");
@@ -55,21 +64,33 @@ export default function Form({
     }
   };
 
-  const onCountChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
+  const handleMaterialSelect = (e: ChangeEvent<HTMLSelectElement>) => {
+    const materialId = e.target.value;
+    setSelectedMaterial(materialId);
+    if (materialId === 'new') {
+      const newMaterial: MaterialOption = {
+        id: `custom-${Date.now()}`,
+        name: '',
+        price: 0
+      };
+      setCustomMaterials([...customMaterials, newMaterial]);
+      setSelectedMaterials({ ...selectedMaterials, [newMaterial.id]: 0 });
+    } else if (materialId) {
+      setSelectedMaterials({ ...selectedMaterials, [materialId]: 0 });
+    }
   };
 
-  const isShowSubmitButton =
-    Object.values(state).length &&
-    Object.values(state)?.reduce((acc, v) => acc + v) >= 1;
+  const handleQuantityChange = (materialId: string, quantity: number) => {
+    setSelectedMaterials({ ...selectedMaterials, [materialId]: quantity });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(state);
-    setShowSuccessMessage(true);
-    setTimeout(() => {
-      setShowSuccessMessage(false);
-    }, 3000);
+    const validProducts = Object.entries(selectedMaterials)
+      .filter(([_, count]) => count > 0)
+      .reduce((acc, [id, count]) => ({ ...acc, [id]: count }), {});
+    
+    onSubmit(validProducts);
   };
 
   return (
@@ -82,56 +103,91 @@ export default function Form({
         </div>
       )}
 
+      {error && (
+        <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
       <div className="border-b border-gray-200 py-6">
         <span className="block font-medium text-gray-900 mb-2">
           Выберите поставщика
         </span>
 
         <Select
-          placeholder="Выберите поставщика"
-          value={selectedProvider}
-          isClearable
+          id="provider"
+          name="provider"
+          value={providerId || ''}
           onChange={handleProviderChange}
-          options={providerOptions}
-          isSearchable={false}
-          className="basic-single"
-          classNamePrefix="select"
-        />
+          className="mt-1 block w-full"
+        >
+          <option value="">Выберите поставщика</option>
+          {providers.map((provider) => (
+            <option key={provider.id} value={provider.id}>
+              {provider.name}
+            </option>
+          ))}
+        </Select>
       </div>
 
-      <div className="flex flex-col gap-5 my-10">
-        {products?.map((p) => (
-          <div
-            className="flex flex-col justify-between p-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-            key={p.id}
+      {providerId && (
+        <div className="border-b border-gray-200 py-6">
+          <span className="block font-medium text-gray-900 mb-2">
+            Выберите материал
+          </span>
+
+          <Select
+            id="material"
+            name="material"
+            value={selectedMaterial}
+            onChange={handleMaterialSelect}
+            className="mt-1 block w-full"
           >
-            <div>Название товара: {p.name}</div>
-            <div>Цена за 1ед товара {formatCurrency(p.price)}</div>
-            <input
-              className="text-black rounded mt-3"
-              name={p.id}
-              id={p.id}
-              type="number"
-              defaultValue={0}
-              step={5}
-              onChange={onCountChange}
-            />
-          </div>
-        ))}
-      </div>
+            <option value="">Выберите материал</option>
+            {products?.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} ({product.article})
+              </option>
+            ))}
+            <option value="new">+ Добавить новый материал</option>
+          </Select>
+        </div>
+      )}
+
+      {Object.entries(selectedMaterials).length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Выбранные материалы</h3>
+          {Object.entries(selectedMaterials).map(([materialId, quantity]) => {
+            const material = products?.find(p => p.id === materialId) || 
+                           customMaterials.find(m => m.id === materialId);
+            if (!material) return null;
+
+            return (
+              <div key={materialId} className="flex items-center space-x-4">
+                <span className="flex-1">{material.name}</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={quantity}
+                  onChange={(e) => handleQuantityChange(materialId, parseInt(e.target.value) || 0)}
+                  className="w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex justify-end gap-1">
-        {isShowSubmitButton ? (
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Отправка...' : 'Оформить заказ'}
-          </Button>
-        ) : null}
         <Link
-          href="/invoices"
+          href="/dashboard/approve"
           className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
         >
-          Отменить
+          Отмена
         </Link>
+        <Button onClick={handleSubmit} disabled={isSubmitting || Object.values(selectedMaterials).every(count => count === 0)}>
+          {isSubmitting ? 'Создание...' : 'Создать заказ'}
+        </Button>
       </div>
     </section>
   );
