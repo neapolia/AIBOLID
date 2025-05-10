@@ -84,7 +84,19 @@ export async function fetchInvoices() {
         i.status,
         i.payment_status,
         pp.name as provider_name,
-        COALESCE(SUM(p.price * ip.count), 0) as total_amount
+        COALESCE(SUM(p.price * ip.count), 0) as total_amount,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', p.id,
+              'name', p.name,
+              'article', p.article,
+              'price', p.price,
+              'count', ip.count
+            )
+          ) FILTER (WHERE p.id IS NOT NULL),
+          '[]'
+        ) as products
       FROM polina_invoices as i
       LEFT JOIN polina_providers AS pp ON i.provider_id = pp.id
       LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
@@ -106,14 +118,17 @@ export async function fetchInvoiceById(id: string) {
       SELECT
         i.id,
         i.created_at,
-        json_agg(
-          json_build_object(
-            'price', pp.price,
-            'name', pp.name,
-            'count', pip.count
-          )
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'price', pp.price,
+              'name', pp.name,
+              'count', pip.count
+            )
+          ) FILTER (WHERE pp.id IS NOT NULL),
+          '[]'
         ) AS products,
-        SUM(pp.price * pip.count) AS total_amount
+        COALESCE(SUM(pp.price * pip.count), 0) AS total_amount
       FROM polina_invoices i
       LEFT JOIN polina_invoices_products pip ON i.id = pip.invoice_id
       LEFT JOIN polina_products pp ON pip.product_id = pp.id

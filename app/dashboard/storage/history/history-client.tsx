@@ -28,10 +28,6 @@ export default function HistoryClient() {
         throw new Error('No data received from server');
       }
       
-      if (data.length === 0) {
-        console.log('Empty data array received');
-      }
-      
       setHistory(data);
     } catch (error) {
       console.error('Error in loadHistory:', error);
@@ -79,11 +75,16 @@ export default function HistoryClient() {
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
           <p className="font-bold">Ошибка:</p>
           <p>{error}</p>
+          <button
+            onClick={loadHistory}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Попробовать снова
+          </button>
         </div>
       )}
       
-      {/* Фильтры */}
-      <div className="mb-4 flex gap-4 items-end">
+      <div className="mb-4 flex flex-wrap gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Начальная дата</label>
           <input
@@ -102,20 +103,22 @@ export default function HistoryClient() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
-        <button
-          onClick={handleFilter}
-          disabled={isLoading}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-        >
-          {isLoading ? 'Загрузка...' : 'Применить фильтр'}
-        </button>
-        <button
-          onClick={exportToExcel}
-          disabled={isLoading || history.length === 0}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-        >
-          Экспорт в Excel
-        </button>
+        <div className="flex items-end gap-2">
+          <button
+            onClick={handleFilter}
+            disabled={isLoading}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            {isLoading ? 'Загрузка...' : 'Применить фильтр'}
+          </button>
+          <button
+            onClick={exportToExcel}
+            disabled={isLoading || history.length === 0}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+          >
+            Экспорт в Excel
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 flow-root">
@@ -141,7 +144,7 @@ export default function HistoryClient() {
                     <th scope="col" className="px-4 py-5 font-medium">Дата</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white">
+                <tbody>
                   {history.map((record) => (
                     <tr key={record.id} className="w-full border-b py-3 text-sm">
                       <td className="whitespace-nowrap px-3 py-3">{record.product_name}</td>

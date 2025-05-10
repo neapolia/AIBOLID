@@ -21,7 +21,7 @@ export type Revenue = {
   revenue: number;
 };
 
-export type OrderStatus = 'pending' | 'closed';
+export type OrderStatus = 'pending' | 'delivered' | 'closed';
 export type PaymentStatus = 'pending' | 'paid';
 
 export type LatestInvoice = {
@@ -35,14 +35,20 @@ export type LatestInvoice = {
 
 export type InvoicesTable = {
   id: string;
-  provider_name: string;
-  provider_email: string;
-  total_amount: number;
   created_at: string;
   delivery_date: string | null;
-  status: OrderStatus | null;
-  payment_status: PaymentStatus | null;
   docs_url: string | null;
+  status: 'pending' | 'delivered' | 'closed';
+  payment_status: 'pending' | 'paid';
+  provider_name: string;
+  total_amount: number;
+  products: Array<{
+    id: string;
+    name: string;
+    article: string;
+    price: number;
+    count: number;
+  }>;
 };
 
 export type FormattedProviders = {

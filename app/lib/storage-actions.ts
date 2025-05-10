@@ -71,65 +71,43 @@ async function checkMinStock(productId: string, currentCount: number) {
   }
 }
 
+// Функция для обновления количества материалов на складе при закрытии заказа
 export async function updateStorageFromInvoice(invoiceId: string) {
   try {
+    console.log('Updating storage from invoice:', invoiceId);
+    
     // Получаем все товары из заказа
     const invoiceProducts = await sql`
-      SELECT ip.product_id, ip.count, p.name, p.article, p.price, p.provider_id
+      SELECT 
+        ip.product_id,
+        ip.count,
+        p.name,
+        p.article,
+        p.price
       FROM polina_invoices_products ip
       JOIN polina_products p ON ip.product_id = p.id
       WHERE ip.invoice_id = ${invoiceId}
     `;
 
+    console.log('Found products in invoice:', invoiceProducts.length);
+
     // Для каждого товара обновляем количество на складе
     for (const product of invoiceProducts) {
-      // Проверяем, есть ли уже такой товар на складе
-      const existingProduct = await sql`
-        SELECT id, count FROM polina_storage 
-        WHERE product_id = ${product.product_id}
+      // Обновляем количество в таблице polina_products
+      await sql`
+        UPDATE polina_products
+        SET count = count + ${product.count}
+        WHERE id = ${product.product_id}
       `;
 
-      if (existingProduct.length > 0) {
-        // Если товар уже есть на складе, обновляем количество
-        const newCount = existingProduct[0].count + product.count;
-        await sql`
-          UPDATE polina_storage
-          SET count = ${newCount}
-          WHERE product_id = ${product.product_id}
-        `;
-        
-        // Записываем изменение в историю
-        await logStorageChange(product.product_id, product.count, invoiceId, 'add');
-        
-        // Проверяем минимальный остаток
-        await checkMinStock(product.product_id, newCount);
-      } else {
-        // Если товара нет на складе, создаем новую запись
-        await sql`
-          INSERT INTO polina_storage (product_id, count, name, article, price, provider_id)
-          VALUES (
-            ${product.product_id},
-            ${product.count},
-            ${product.name},
-            ${product.article},
-            ${product.price},
-            ${product.provider_id}
-          )
-        `;
-        
-        // Записываем изменение в историю
-        await logStorageChange(product.product_id, product.count, invoiceId, 'add');
-        
-        // Проверяем минимальный остаток
-        await checkMinStock(product.product_id, product.count);
-      }
+      console.log(`Updated product ${product.name} with count ${product.count}`);
     }
 
-    revalidatePath('/storage');
-    return { message: 'Склад успешно обновлен' };
+    revalidatePath('/storage/products');
+    return { success: true, message: 'Склад успешно обновлен' };
   } catch (error) {
     console.error('Error updating storage:', error);
-    return { message: 'Ошибка при обновлении склада' };
+    throw error;
   }
 }
 
@@ -141,6 +119,18 @@ export async function getStorageHistory(
 ) {
   try {
     console.log('Starting getStorageHistory...');
+    
+    // Проверяем существование таблицы
+    await sql`
+      CREATE TABLE IF NOT EXISTS polina_storage_history (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        product_id UUID NOT NULL REFERENCES polina_products(id),
+        count INTEGER NOT NULL,
+        operation VARCHAR(10) NOT NULL CHECK (operation IN ('add', 'remove')),
+        invoice_id UUID REFERENCES polina_invoices(id),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
     
     // Простой запрос без фильтров для отладки
     const result = await sql`
@@ -184,7 +174,7 @@ export async function getStorageHistory(
         stack: error.stack
       });
     }
-    throw error; // Пробрасываем ошибку дальше для отладки
+    throw error;
   }
 }
 
@@ -283,6 +273,38 @@ export async function checkTableContents() {
         stack: error.stack
       });
     }
+    throw error;
+  }
+}
+
+// Функция для получения данных о продуктах на складе
+export async function getProducts() {
+  try {
+    console.log('Getting products from storage...');
+    
+    const products = await sql`
+      SELECT 
+        id,
+        name,
+        article,
+        price,
+        provider_id,
+        count
+      FROM polina_products
+      ORDER BY name ASC
+    `;
+
+    console.log('Products retrieved:', products.length);
+    return products.map(product => ({
+      id: product.id,
+      name: product.name,
+      article: product.article,
+      price: Number(product.price),
+      provider_id: product.provider_id,
+      count: Number(product.count)
+    }));
+  } catch (error) {
+    console.error('Error getting products:', error);
     throw error;
   }
 } 

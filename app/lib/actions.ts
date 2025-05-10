@@ -83,29 +83,32 @@ export async function createInvoice({ providerId, products, material }: CreateIn
 }
 
 export async function updateInvoiceStatus(
-  id: string,
-  status: OrderStatus,
-  paymentStatus: PaymentStatus
+  invoiceId: string,
+  status: 'pending' | 'delivered' | 'closed',
+  paymentStatus: 'pending' | 'paid'
 ) {
   try {
-    // Обновляем статус заказа
+    console.log('Updating invoice status:', { invoiceId, status, paymentStatus });
+    
+    // Обновляем статус заказа и статус оплаты
     await sql`
       UPDATE polina_invoices
-      SET status = ${status},
-          payment_status = ${paymentStatus}
-      WHERE id = ${id}
+      SET 
+        status = ${status},
+        payment_status = ${paymentStatus}
+      WHERE id = ${invoiceId}
     `;
 
-    // Если заказ доставлен и оплачен, перемещаем товары на склад
+    // Если заказ доставлен и оплачен, обновляем склад
     if (status === 'closed' && paymentStatus === 'paid') {
-      await updateStorageFromInvoice(id);
+      await updateStorageFromInvoice(invoiceId);
     }
 
-    revalidatePath('/dashboard');
-    return { message: 'Статус заказа обновлен' };
+    revalidatePath('/dashboard/approve');
+    return { success: true };
   } catch (error) {
     console.error('Error updating invoice status:', error);
-    return { message: 'Ошибка при обновлении статуса заказа' };
+    throw error;
   }
 }
 

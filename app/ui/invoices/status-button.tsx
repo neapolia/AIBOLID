@@ -9,7 +9,8 @@ export default function StatusButton({
 }) {
   const statusMap: Record<OrderStatus, { label: string; color: string }> = {
     pending: { label: "В ожидании", color: "bg-gray-100 text-gray-800" },
-    closed: { label: "Доставлен", color: "bg-green-100 text-green-800" },
+    delivered: { label: "Доставлен", color: "bg-blue-100 text-blue-800" },
+    closed: { label: "Закрыт", color: "bg-green-100 text-green-800" },
   };
 
   if (!status) {

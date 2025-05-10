@@ -1,152 +1,166 @@
 'use client';
 
-import { InvoicesTable, OrderStatus, PaymentStatus } from '@/app/lib/definitions';
-import { updateInvoiceStatus, getInvoiceDetails } from '@/app/lib/actions';
-import { useState } from 'react';
+import { updateInvoiceStatus } from '@/app/lib/actions';
 import InvoiceDetailsModal from '@/app/ui/invoices/invoice-details-modal';
+import { useState } from 'react';
 
-type InvoiceDetails = {
+interface Invoice {
   id: string;
   created_at: string;
+  status: 'pending' | 'delivered' | 'closed';
+  payment_status: 'pending' | 'paid';
   provider_name: string;
-  status: string;
-  payment_status: string;
-  products: {
+  total_amount: number;
+  products: Array<{
     id: string;
     name: string;
     article: string;
     price: number;
     count: number;
-  }[];
-  total_amount: number;
-};
+  }>;
+}
 
-export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetails | null>(null);
+interface ApproveTableProps {
+  invoices: Invoice[];
+}
+
+export default function ApproveTable({ invoices }: ApproveTableProps) {
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleStatusChange = async (id: string, status: OrderStatus) => {
-    setIsUpdating(true);
+  const handleViewDetails = async (invoice: Invoice) => {
     try {
-      await updateInvoiceStatus(id, status, 'pending');
-    } catch (error) {
-      console.error('Error updating status:', error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-  
-  const handlePaymentStatusChange = async (id: string, paymentStatus: PaymentStatus) => {
-    setIsUpdating(true);
-    try {
-      await updateInvoiceStatus(id, 'closed', paymentStatus);
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleViewDetails = async (id: string) => {
-    try {
-      const details = await getInvoiceDetails(id);
-      const serializedDetails = {
-        ...details,
-        created_at: new Date(details.created_at).toISOString(),
-        products: details.products.map(product => ({
-          ...product,
-          price: Number(product.price),
-          count: Number(product.count)
-        }))
-      };
-      setSelectedInvoice(serializedDetails);
+      const response = await fetch(`/api/invoices/${invoice.id}`);
+      const data = await response.json();
+      setSelectedInvoice(data);
       setIsModalOpen(true);
     } catch (error) {
-      console.error('Error loading invoice details:', error);
+      console.error('Error fetching invoice details:', error);
+      alert('Ошибка при загрузке деталей заказа');
     }
   };
 
-  if (!invoices || invoices.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <p className="text-gray-500">Нет заказов для согласования</p>
-      </div>
-    );
-  }
+  const handleStatusUpdate = async (invoiceId: string, status: 'pending' | 'delivered' | 'closed', paymentStatus: 'pending' | 'paid') => {
+    try {
+      setIsUpdating(true);
+      await updateInvoiceStatus(invoiceId, status, paymentStatus);
+      // Обновляем страницу после изменения статуса
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Ошибка при обновлении статуса заказа');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const getStatusBadgeClass = (status: string, paymentStatus: string) => {
+    if (status === 'closed' && paymentStatus === 'paid') {
+      return 'bg-green-100 text-green-800';
+    } else if (status === 'delivered') {
+      return 'bg-blue-100 text-blue-800';
+    } else if (paymentStatus === 'paid') {
+      return 'bg-yellow-100 text-yellow-800';
+    }
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusText = (status: string, paymentStatus: string) => {
+    if (status === 'closed' && paymentStatus === 'paid') {
+      return 'Закрыт и оплачен';
+    } else if (status === 'delivered') {
+      return 'Доставлен';
+    } else if (paymentStatus === 'paid') {
+      return 'Оплачен';
+    }
+    return 'В ожидании';
+  };
 
   return (
-    <>
-      <div className="mt-6 flow-root">
-        <div className="inline-block min-w-full align-middle">
-          <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
-            <table className="min-w-full text-gray-900">
-              <thead className="rounded-lg text-left text-sm font-normal">
-                <tr>
-                  <th scope="col" className="px-4 py-5 font-medium">Номер заказа</th>
-                  <th scope="col" className="px-4 py-5 font-medium">Поставщик</th>
-                  <th scope="col" className="px-4 py-5 font-medium">Статус доставки</th>
-                  <th scope="col" className="px-4 py-5 font-medium">Статус оплаты</th>
-                  <th scope="col" className="px-4 py-5 font-medium">Действия</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {invoices.map((invoice) => (
-                  <tr 
-                    key={invoice.id} 
-                    className={`w-full border-b py-3 text-sm ${
-                      invoice.status === 'closed' ? 'bg-gray-100' : ''
-                    }`}
-                  >
-                    <td className="whitespace-nowrap px-3 py-3">{invoice.id}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{invoice.provider_name}</td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      {invoice.status === 'closed' ? 'Доставлен' : 'Ожидает'}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      {invoice.payment_status === 'paid' ? 'Оплачен' : 'Не оплачен'}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      <div className="flex gap-2">
+    <div className="mt-6 flow-root">
+      <div className="inline-block min-w-full align-middle">
+        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+          <table className="min-w-full text-gray-900">
+            <thead className="rounded-lg text-left text-sm font-normal">
+              <tr>
+                <th scope="col" className="px-4 py-5 font-medium">Заказ</th>
+                <th scope="col" className="px-4 py-5 font-medium">Дата</th>
+                <th scope="col" className="px-4 py-5 font-medium">Поставщик</th>
+                <th scope="col" className="px-4 py-5 font-medium">Сумма</th>
+                <th scope="col" className="px-4 py-5 font-medium">Статус</th>
+                <th scope="col" className="px-4 py-5 font-medium">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              {invoices.map((invoice) => (
+                <tr key={invoice.id} className="w-full border-b py-3 text-sm">
+                  <td className="whitespace-nowrap px-3 py-3">#{invoice.id.slice(0, 8)}</td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    {new Date(invoice.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">{invoice.provider_name}</td>
+                  <td className="whitespace-nowrap px-3 py-3">{invoice.total_amount} ₽</td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(invoice.status, invoice.payment_status)}`}>
+                      {getStatusText(invoice.status, invoice.payment_status)}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleViewDetails(invoice)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        Просмотр
+                      </button>
+                      {invoice.status !== 'closed' && (
+                        <>
+                          {invoice.status === 'pending' && (
+                            <button
+                              onClick={() => handleStatusUpdate(invoice.id, 'delivered', invoice.payment_status)}
+                              disabled={isUpdating}
+                              className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                            >
+                              Отметить как доставленный
+                            </button>
+                          )}
+                          {invoice.status === 'delivered' && invoice.payment_status === 'paid' && (
+                            <button
+                              onClick={() => handleStatusUpdate(invoice.id, 'closed', 'paid')}
+                              disabled={isUpdating}
+                              className="text-purple-600 hover:text-purple-800 disabled:opacity-50"
+                            >
+                              Закрыть заказ
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {invoice.payment_status === 'pending' && (
                         <button
-                          onClick={() => handleViewDetails(invoice.id)}
-                          className="rounded-md bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-400"
-                        >
-                          Детали
-                        </button>
-                        <select
+                          onClick={() => handleStatusUpdate(invoice.id, invoice.status, 'paid')}
                           disabled={isUpdating}
-                          onChange={(e) => handleStatusChange(invoice.id, e.target.value as OrderStatus)}
-                          className="rounded-md border p-2"
-                          value={invoice.status || 'pending'}
+                          className="text-yellow-600 hover:text-yellow-800 disabled:opacity-50"
                         >
-                          <option value="pending">Ожидает</option>
-                          <option value="closed">Доставлен</option>
-                        </select>
-                        <select
-                          disabled={isUpdating || invoice.status !== 'closed'}
-                          onChange={(e) => handlePaymentStatusChange(invoice.id, e.target.value as PaymentStatus)}
-                          className="rounded-md border p-2"
-                          value={invoice.payment_status || 'pending'}
-                        >
-                          <option value="pending">Не оплачен</option>
-                          <option value="paid">Оплачен</option>
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          Отметить как оплаченный
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <InvoiceDetailsModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        invoice={selectedInvoice}
-      />
-    </>
+      {selectedInvoice && (
+        <InvoiceDetailsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          invoice={selectedInvoice}
+        />
+      )}
+    </div>
   );
 } 
