@@ -22,7 +22,6 @@ export default function InvoicesTable({
                     <div className="mb-2 flex items-center">
                       <p>{invoice.provider_name}</p>
                     </div>
-                    <p className="text-sm text-gray-500">{invoice.provider_email}</p>
                   </div>
                 </div>
                 <div className="flex w-full items-center justify-between pt-4">
@@ -34,7 +33,7 @@ export default function InvoicesTable({
                   </div>
                   <div className="flex justify-end gap-2">
                     <StatusButton 
-                      currentStatus={invoice.status || 'created'}
+                      status={invoice.status || 'pending'}
                     />
                   </div>
                 </div>
@@ -77,7 +76,7 @@ export default function InvoicesTable({
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <StatusButton 
-                      currentStatus={invoice.status || 'created'}
+                      status={invoice.status || 'pending'}
                     />
                   </td>
                 </tr>

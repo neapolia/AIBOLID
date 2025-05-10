@@ -44,8 +44,8 @@ export async function fetchCardData() {
     const providerCountPromise = sql`SELECT COUNT(*) FROM polina_providers`;
     const invoiceStatusPromise = sql`
       SELECT
-        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) AS "delivered",
-        SUM(CASE WHEN status = 'created' THEN 1 ELSE 0 END) AS "created"
+        SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) AS "closed",
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS "pending"
       FROM polina_invoices`;
 
     const data = await Promise.all([
@@ -56,14 +56,14 @@ export async function fetchCardData() {
 
     const numberOfInvoices = Number(data[0][0].count ?? "0");
     const numberOfProviders = Number(data[1][0].count ?? "0");
-    const deliveredInvoices = Number(data[2][0].delivered ?? "0");
-    const createdInvoices = Number(data[2][0].created ?? "0");
+    const closedInvoices = Number(data[2][0].closed ?? "0");
+    const pendingInvoices = Number(data[2][0].pending ?? "0");
 
     return {
       numberOfProviders,
       numberOfInvoices,
-      deliveredInvoices,
-      createdInvoices,
+      deliveredInvoices: closedInvoices,
+      createdInvoices: pendingInvoices,
     };
   } catch (error) {
     console.error("DB (fetchCardData):", error);
