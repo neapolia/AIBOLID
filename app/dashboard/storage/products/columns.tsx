@@ -4,8 +4,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import Button from "@/app/ui/button";
 import { Input } from "@/app/ui/input";
 import { useState } from "react";
-import { updateProductCount } from "@/app/lib/storage-actions";
-import { toast } from "sonner";
 import { formatCurrency } from '@/app/lib/utils';
 
 export type Product = {
@@ -18,7 +16,7 @@ export type Product = {
   provider_name: string;
 };
 
-function ActionsCell({ product }: { product: Product }) {
+function DeductCell({ product }: { product: Product }) {
   const [deductAmount, setDeductAmount] = useState(1);
 
   const handleDeduct = async () => {
@@ -38,7 +36,6 @@ function ActionsCell({ product }: { product: Product }) {
         throw new Error('Failed to deduct product');
       }
 
-      // Обновляем страницу после успешного списания
       window.location.reload();
     } catch (error) {
       console.error('Error deducting product:', error);
@@ -48,13 +45,13 @@ function ActionsCell({ product }: { product: Product }) {
 
   return (
     <div className="flex items-center gap-2">
-      <input
+      <Input
         type="number"
         min="1"
         max={product.count}
         value={deductAmount}
         onChange={(e) => setDeductAmount(Math.min(Number(e.target.value), product.count))}
-        className="w-20 px-2 py-1 border rounded"
+        className="w-20"
       />
       <Button
         onClick={handleDeduct}
@@ -92,6 +89,6 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <ActionsCell product={row.original} />,
+    cell: ({ row }) => <DeductCell product={row.original} />,
   },
 ]; 

@@ -33,7 +33,17 @@ export async function createInvoice({ providerId, products, material }: CreateIn
   }
 
   try {
-    console.log('Creating invoice with:', { providerId, products, material });
+    // Проверяем, нет ли уже такого заказа
+    const existingInvoice = await sql`
+      SELECT id FROM polina_invoices 
+      WHERE provider_id = ${providerId} 
+      AND status = 'pending'
+      AND created_at > NOW() - INTERVAL '5 minutes'
+    `;
+
+    if (existingInvoice && existingInvoice.length > 0) {
+      return { success: false, error: 'Заказ уже создан' };
+    }
 
     const result = await sql`
       INSERT INTO polina_invoices (
@@ -73,7 +83,6 @@ export async function createInvoice({ providerId, products, material }: CreateIn
       }
     }
 
-    console.log('Invoice created successfully:', invoiceId);
     revalidatePath("/dashboard/approve");
     return { success: true, invoiceId };
   } catch (error) {
@@ -138,43 +147,55 @@ type InvoiceDetails = {
 // Функция для получения деталей заказа
 export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetails> {
   try {
-    const invoice = await sql<InvoiceDetails[]>`
+    const invoice = await sql`
       SELECT 
         i.id,
         i.created_at,
         i.status,
-        pp.name as provider_name,
-        COALESCE(SUM(p.price * ip.count), 0) as total_amount,
-        COALESCE(
-          json_agg(
-            json_build_object(
-              'id', p.id,
-              'name', p.name,
-              'article', p.article,
-              'price', p.price,
-              'count', ip.count
-            )
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'
-        ) as items
+        i.payment_status,
+        p.name as provider_name,
+        COALESCE(SUM(ip.count * pr.price), 0) as total_amount
       FROM polina_invoices i
-      LEFT JOIN polina_providers pp ON i.provider_id = pp.id
+      LEFT JOIN polina_providers p ON i.provider_id = p.id
       LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
-      LEFT JOIN polina_products p ON ip.product_id = p.id
+      LEFT JOIN polina_products pr ON ip.product_id = pr.id
       WHERE i.id = ${invoiceId}
-      GROUP BY i.id, i.created_at, i.status, pp.name
+      GROUP BY i.id, i.created_at, i.status, i.payment_status, p.name
     `;
 
-    if (!invoice[0]) {
+    if (!invoice || invoice.length === 0) {
       throw new Error('Invoice not found');
     }
 
+    const items = await sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.article,
+        p.price,
+        ip.count
+      FROM polina_invoices_products ip
+      JOIN polina_products p ON ip.product_id = p.id
+      WHERE ip.invoice_id = ${invoiceId}
+    `;
+
     return {
-      ...invoice[0],
-      items: invoice[0].items || []
-    };
+      id: invoice[0].id,
+      created_at: invoice[0].created_at,
+      status: invoice[0].status,
+      payment_status: invoice[0].payment_status,
+      provider_name: invoice[0].provider_name,
+      total_amount: Number(invoice[0].total_amount),
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        article: item.article,
+        price: Number(item.price),
+        count: Number(item.count)
+      }))
+    } as InvoiceDetails;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoice details');
+    throw new Error('Failed to fetch invoice details.');
   }
 }
