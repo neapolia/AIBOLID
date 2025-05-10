@@ -4,7 +4,7 @@ import {
   FormattedStorage,
   InvoiceInfo,
   InvoicesTable,
-  LatestInvoiceRaw,
+  LatestInvoice,
   Product,
 } from "./definitions";
 import { formatCurrency } from "./utils";
@@ -13,25 +13,23 @@ const sql = postgres(process.env.POSTGRES_URL!);
 
 export async function fetchLatestInvoices() {
   try {
-    const data = await sql<LatestInvoiceRaw[]>`
+    const data = await sql<LatestInvoice[]>`
       SELECT 
         i.id,
-        pp.name,
-        pp.email,
-        SUM(p.price * ip.count) as amount
+        pp.name as provider_name,
+        i.created_at,
+        i.status,
+        i.payment_status,
+        COALESCE(SUM(p.price * ip.count), 0) as total_amount
       FROM polina_invoices i
       JOIN polina_invoices_products ip ON i.id = ip.invoice_id
       JOIN polina_products p ON ip.product_id = p.id
       JOIN polina_providers pp ON p.provider_id = pp.id
-      GROUP BY i.id, pp.name, pp.email
+      GROUP BY i.id, pp.name, i.created_at, i.status, i.payment_status
       ORDER BY i.created_at DESC
       LIMIT 5`;
 
-    const latestInvoices = data.map((invoice) => ({
-      ...invoice,
-      amount: formatCurrency(invoice.amount),
-    }));
-    return latestInvoices;
+    return data;
   } catch (error) {
     console.error("Database Error:", error);
     return [];
@@ -178,6 +176,7 @@ export async function fetchFilteredStorage(query: string) {
     return data;
   } catch (error) {
     console.error("DB (fetchFilteredStorage):", error);
+    return [];
   }
 }
 
