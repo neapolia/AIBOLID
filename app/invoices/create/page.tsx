@@ -4,7 +4,7 @@ import { createInvoice } from "@/app/lib/actions";
 import { fetchProviders, fetchProviderProducts } from "@/app/lib/data";
 import Form from "@/app/ui/invoices/form";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { FormattedProviders, Product } from "@/app/lib/definitions";
 
 type Material = {
@@ -13,7 +13,7 @@ type Material = {
   price: number;
 };
 
-export default function CreateInvoicePage() {
+function CreateInvoiceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,24 +72,32 @@ export default function CreateInvoicePage() {
   };
 
   return (
+    <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
+      <h1 className="text-4xl font-bold mb-8">Create New Order</h1>
+      {showSuccess ? (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+          Order has been sent to the supplier!
+        </div>
+      ) : (
+        <Form
+          providerId={searchParams.get('providerId')}
+          providers={providers}
+          products={products}
+          onSubmit={handleCreateInvoice}
+          isSubmitting={isSubmitting}
+          onMaterialSelect={setSelectedMaterial}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function CreateInvoicePage() {
+  return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8">Create New Order</h1>
-        {showSuccess ? (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-            Order has been sent to the supplier!
-          </div>
-        ) : (
-          <Form
-            providerId={searchParams.get('providerId')}
-            providers={providers}
-            products={products}
-            onSubmit={handleCreateInvoice}
-            isSubmitting={isSubmitting}
-            onMaterialSelect={setSelectedMaterial}
-          />
-        )}
-      </div>
+      <Suspense fallback={<div>Loading...</div>}>
+        <CreateInvoiceContent />
+      </Suspense>
     </main>
   );
 }
