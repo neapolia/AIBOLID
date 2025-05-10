@@ -87,3 +87,18 @@ export type InvoiceInfo = {
   total_amount: number;
   products: Omit<NewInvoiceProduct, "id" | "provider_id" | "article">[];
 };
+
+export type InvoiceDetails = {
+  id: string;
+  provider_name: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  items: {
+    id: string;
+    name: string;
+    article: string;
+    price: number;
+    count: number;
+  }[];
+};

@@ -1,12 +1,31 @@
-import type { InvoicesTable } from "@/app/lib/definitions";
+'use client';
+
+import { useState } from 'react';
+import type { InvoicesTable, InvoiceDetails } from "@/app/lib/definitions";
 import { formatCurrency } from "@/app/lib/utils";
 import StatusButton from "./status-button";
+import InvoiceDetailsModal from "./invoice-details-modal";
+import { getInvoiceDetails } from "@/app/lib/actions";
 
 export default function InvoicesTable({
   invoices,
 }: {
   invoices: InvoicesTable[];
 }) {
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleViewDetails = async (invoiceId: string) => {
+    try {
+      const details = await getInvoiceDetails(invoiceId);
+      setSelectedInvoice(details);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching invoice details:', error);
+      alert('Ошибка при загрузке деталей заказа');
+    }
+  };
+
   return (
     <div className="mt-6 flow-root">
       <div className="inline-block min-w-full align-middle">
@@ -55,6 +74,9 @@ export default function InvoicesTable({
                 <th scope="col" className="px-3 py-5 font-medium">
                   Статус
                 </th>
+                <th scope="col" className="px-3 py-5 font-medium">
+                  Действия
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -79,12 +101,28 @@ export default function InvoicesTable({
                       status={invoice.status || 'pending'}
                     />
                   </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <button
+                      onClick={() => handleViewDetails(invoice.id)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Просмотр
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {selectedInvoice && (
+        <InvoiceDetailsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          invoice={selectedInvoice}
+        />
+      )}
     </div>
   );
 }

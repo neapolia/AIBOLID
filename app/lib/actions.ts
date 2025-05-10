@@ -126,51 +126,55 @@ type InvoiceDetails = {
     count: number;
   }[];
   total_amount: number;
+  items: {
+    id: string;
+    name: string;
+    article: string;
+    price: number;
+    count: number;
+  }[];
 };
 
 // Функция для получения деталей заказа
 export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetails> {
   try {
-    // Получаем основную информацию о заказе
-    const invoice = await sql`
+    const invoice = await sql<InvoiceDetails[]>`
       SELECT 
         i.id,
         i.created_at,
         i.status,
-        i.payment_status,
-        p.name as provider_name
+        pp.name as provider_name,
+        COALESCE(SUM(p.price * ip.count), 0) as total_amount,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', p.id,
+              'name', p.name,
+              'article', p.article,
+              'price', p.price,
+              'count', ip.count
+            )
+          ) FILTER (WHERE p.id IS NOT NULL),
+          '[]'
+        ) as items
       FROM polina_invoices i
-      JOIN polina_providers p ON i.provider_id = p.id
+      LEFT JOIN polina_providers pp ON i.provider_id = pp.id
+      LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
+      LEFT JOIN polina_products p ON ip.product_id = p.id
       WHERE i.id = ${invoiceId}
+      GROUP BY i.id, i.created_at, i.status, pp.name
     `;
 
-    if (!invoice || invoice.length === 0) {
-      throw new Error('Заказ не найден');
+    if (!invoice[0]) {
+      throw new Error('Invoice not found');
     }
-
-    // Получаем товары заказа
-    const products = await sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.article,
-        p.price,
-        ip.count
-      FROM polina_invoices_products ip
-      JOIN polina_products p ON ip.product_id = p.id
-      WHERE ip.invoice_id = ${invoiceId}
-    `;
-
-    // Вычисляем общую сумму
-    const total_amount = products.reduce((sum, product) => sum + (product.price * product.count), 0);
 
     return {
       ...invoice[0],
-      products: products as unknown as InvoiceDetails['products'],
-      total_amount
-    } as InvoiceDetails;
+      items: invoice[0].items || []
+    };
   } catch (error) {
-    console.error('Error getting invoice details:', error);
-    throw error;
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch invoice details');
   }
 }

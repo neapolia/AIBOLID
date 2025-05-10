@@ -24,7 +24,9 @@ function CreateInvoiceContent() {
 
   useEffect(() => {
     const loadProviders = async () => {
+      console.log('Loading providers...');
       const data = await fetchProviders();
+      console.log('Loaded providers:', data);
       setProviders(data);
     };
     loadProviders();

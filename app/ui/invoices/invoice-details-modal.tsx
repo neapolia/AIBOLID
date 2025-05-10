@@ -1,27 +1,9 @@
 'use client';
 
-import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { Fragment } from 'react';
 import { formatCurrency } from '@/app/lib/utils';
-
-type InvoiceProduct = {
-  id: string;
-  name: string;
-  article: string;
-  price: number;
-  count: number;
-};
-
-type InvoiceDetails = {
-  id: string;
-  created_at: string;
-  provider_name: string;
-  status: string;
-  payment_status: string;
-  products: InvoiceProduct[];
-  total_amount: number;
-};
+import type { InvoiceDetails } from '@/app/lib/definitions';
 
 export default function InvoiceDetailsModal({
   isOpen,
@@ -30,13 +12,11 @@ export default function InvoiceDetailsModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  invoice: InvoiceDetails | null;
+  invoice: InvoiceDetails;
 }) {
-  if (!invoice) return null;
-
   return (
-    <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-10" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -46,84 +26,105 @@ export default function InvoiceDetailsModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
         </Transition.Child>
 
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
               leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                  <button
-                    type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    onClick={onClose}
-                  >
-                    <span className="sr-only">Закрыть</span>
-                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
-                </div>
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                    <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                      Заказ #{invoice.id}
-                    </Dialog.Title>
-                    <div className="mt-4 space-y-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Поставщик: {invoice.provider_name}</p>
-                        <p className="text-sm text-gray-500">
-                          Дата создания: {new Date(invoice.created_at).toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Статус: {invoice.status === 'pending' ? 'Ожидает' : 'Выполнен'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Статус оплаты: {invoice.payment_status === 'pending' ? 'Не оплачен' : 'Оплачен'}
-                        </p>
-                      </div>
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                <Dialog.Title
+                  as="h3"
+                  className="text-lg font-medium leading-6 text-gray-900"
+                >
+                  Детали заказа #{invoice.id}
+                </Dialog.Title>
 
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-900">Товары:</h4>
-                        <div className="mt-2 divide-y divide-gray-200">
-                          {invoice.products.map((product) => (
-                            <div key={product.id} className="py-2">
-                              <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                              <p className="text-sm text-gray-500">Артикул: {product.article}</p>
-                              <p className="text-sm text-gray-500">
-                                Количество: {product.count} шт.
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Цена: {formatCurrency(product.price)}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Сумма: {formatCurrency(product.price * product.count)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200 pt-4">
-                        <p className="text-base font-medium text-gray-900">
-                          Итого: {formatCurrency(invoice.total_amount)}
-                        </p>
-                      </div>
+                <div className="mt-4">
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Поставщик</p>
+                      <p className="mt-1">{invoice.provider_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Дата</p>
+                      <p className="mt-1">{new Date(invoice.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Статус</p>
+                      <p className="mt-1">{invoice.status}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Общая сумма</p>
+                      <p className="mt-1">{formatCurrency(invoice.total_amount)}</p>
                     </div>
                   </div>
+
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-900 mb-4">Товары</h4>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Товар
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Количество
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Цена
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Сумма
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {invoice.items.map((item) => (
+                            <tr key={item.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {item.name}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {item.count}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatCurrency(item.price)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {formatCurrency(item.price * item.count)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    onClick={onClose}
+                  >
+                    Закрыть
+                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>
         </div>
       </Dialog>
-    </Transition.Root>
+    </Transition>
   );
-} 
+}

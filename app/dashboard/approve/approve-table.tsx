@@ -3,6 +3,7 @@
 import { updateInvoiceStatus } from '@/app/lib/actions';
 import InvoiceDetailsModal from '@/app/ui/invoices/invoice-details-modal';
 import { useState } from 'react';
+import { InvoiceDetails } from '@/app/lib/definitions';
 
 interface Invoice {
   id: string;
@@ -25,7 +26,7 @@ interface ApproveTableProps {
 }
 
 export default function ApproveTable({ invoices }: ApproveTableProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -36,7 +37,10 @@ export default function ApproveTable({ invoices }: ApproveTableProps) {
         throw new Error('Failed to fetch invoice details');
       }
       const data = await response.json();
-      setSelectedInvoice(data);
+      setSelectedInvoice({
+        ...data,
+        items: data.products || []
+      });
       setIsModalOpen(true);
     } catch (error) {
       console.error('Error fetching invoice details:', error);

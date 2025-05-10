@@ -112,11 +112,25 @@ export async function updateStorageFromInvoice(invoiceId: string) {
     `;
 
     for (const product of invoiceProducts) {
-      await sql`
-        UPDATE polina_products
-        SET count = count + ${product.count}
-        WHERE id = ${product.product_id}
+      // Check if product exists in storage
+      const existingStorage = await sql`
+        SELECT count FROM polina_storage WHERE product_id = ${product.product_id}
       `;
+
+      if (existingStorage.length > 0) {
+        // Update existing storage record
+        await sql`
+          UPDATE polina_storage
+          SET count = count + ${product.count}
+          WHERE product_id = ${product.product_id}
+        `;
+      } else {
+        // Create new storage record
+        await sql`
+          INSERT INTO polina_storage (product_id, count)
+          VALUES (${product.product_id}, ${product.count})
+        `;
+      }
 
       await logStorageChange(
         product.product_id,

@@ -76,11 +76,21 @@ export default function Form({
     label: p.name,
   }));
 
-  const selectedProvider = providerId ? providerOptions.find((o) => o.value === providerId) : null;
+  console.log('Providers:', providers);
+  console.log('Provider options:', providerOptions);
 
-  const handleProviderChange = (value: string) => {
-    params.set("providerId", value);
-    replace(`${pathname}?${params.toString()}`);
+  const selectedProvider = providerId ? providerOptions.find((o) => o.value === providerId) : null;
+  console.log('Selected provider:', selectedProvider);
+
+  const handleProviderChange = (option: ProviderOption | null) => {
+    console.log('Provider changed to:', option);
+    if (option) {
+      params.set("providerId", option.value);
+      replace(`${pathname}?${params.toString()}`);
+    } else {
+      params.delete("providerId");
+      replace(`${pathname}?${params.toString()}`);
+    }
   };
 
   const onCountChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -144,9 +154,11 @@ export default function Form({
           placeholder="Выберите поставщика"
           value={selectedProvider}
           isClearable
-          onChange={(v: ProviderOption | null) => handleProviderChange(v?.value || "")}
+          onChange={handleProviderChange}
           options={providerOptions}
           isSearchable={false}
+          className="basic-single"
+          classNamePrefix="select"
         />
       </div>
 

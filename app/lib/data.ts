@@ -196,16 +196,15 @@ export async function fetchFilteredStorage(query: string) {
 
 export async function fetchProviders() {
   try {
-    const providers = await sql<
-      Omit<FormattedProviders, "inn" | "phone" | "site">[]
-    >`
-      SELECT name, id FROM polina_providers
+    const providers = await sql<Omit<FormattedProviders, "inn" | "phone" | "site">[]>`
+      SELECT id, name 
+      FROM polina_providers 
+      ORDER BY name ASC
     `;
-
     return Array.from(providers);
   } catch (error) {
     console.error("Database Error:", error);
-    throw new Error("Failed to fetch storage data.");
+    return [];
   }
 }
 
