@@ -64,36 +64,34 @@ export default function NavLinks() {
   return (
     <>
       {links.map((link) => {
-        const LinkIcon = link.icon;
-        const isActive = link.subLinks 
-          ? link.subLinks.some(subLink => pathname === subLink.href)
-          : pathname === link.href;
-
+        const isActive = pathname === link.href || 
+          (link.subLinks && link.subLinks.some(subLink => pathname === subLink.href));
+        
         return (
-          <div key={link.name} className="space-y-1">
+          <div key={link.name}>
             <Link
               href={link.href}
               className={clsx(
-                "flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3",
+                'flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-gray-100 md:flex-none md:justify-start md:p-2 md:px-3',
                 {
-                  "bg-sky-100 text-blue-600": isActive,
-                }
+                  'bg-gray-100': isActive,
+                },
               )}
             >
-              <LinkIcon className="w-6" />
+              <link.icon className="w-6" />
               <p className="hidden md:block">{link.name}</p>
             </Link>
             {link.subLinks && isActive && (
-              <div className="ml-6 space-y-1">
+              <div className="ml-4 mt-2 space-y-1">
                 {link.subLinks.map((subLink) => (
                   <Link
-                    key={subLink.name}
+                    key={subLink.href}
                     href={subLink.href}
                     className={clsx(
-                      "block px-3 py-2 text-sm font-medium rounded-md",
+                      'block px-3 py-2 text-sm rounded-md',
                       {
-                        "bg-sky-100 text-blue-600": pathname === subLink.href,
-                        "text-gray-600 hover:bg-gray-50 hover:text-gray-900": pathname !== subLink.href,
+                        'bg-gray-100': pathname === subLink.href,
+                        'text-gray-600 hover:bg-gray-50': pathname !== subLink.href,
                       }
                     )}
                   >

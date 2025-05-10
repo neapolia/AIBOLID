@@ -15,16 +15,25 @@ export default function ProductsClient() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('ProductsClient mounted');
     loadProducts();
   }, []);
 
   const loadProducts = async () => {
     try {
+      console.log('Starting to load products...');
       setIsLoading(true);
       const productsData = await getProducts();
+      console.log('Products loaded successfully:', productsData);
       setProducts(productsData);
     } catch (error) {
       console.error('Error loading products:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
       setError('Ошибка при загрузке данных');
     } finally {
       setIsLoading(false);
@@ -33,10 +42,13 @@ export default function ProductsClient() {
 
   const handleCountUpdate = async (productId: string, newCount: number) => {
     try {
+      console.log('Updating product count:', { productId, newCount });
       await updateProductCount(productId, newCount);
+      console.log('Product count updated successfully');
       await loadProducts();
       toast.success("Количество успешно обновлено");
     } catch (err) {
+      console.error('Error updating product count:', err);
       toast.error("Не удалось обновить количество");
     }
   };
