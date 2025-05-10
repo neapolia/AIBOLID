@@ -49,9 +49,9 @@ export default function StorageAnalyticsClient({ analytics }: StorageAnalyticsCl
           <CardTitle className="text-sm font-medium">Товары с низким остатком</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{analytics.lowStockProducts.length}</div>
+          <div className="text-2xl font-bold">{analytics.lowStockProducts}</div>
           <p className="text-xs text-muted-foreground">
-            {analytics.lowStockProducts.map(p => p.name).join(", ")}
+            Товары с остатком менее 5 единиц
           </p>
         </CardContent>
       </Card>
@@ -61,10 +61,10 @@ export default function StorageAnalyticsClient({ analytics }: StorageAnalyticsCl
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {analytics.providerDistribution.slice(0, 3).map(provider => (
-              <div key={provider.provider_id} className="flex justify-between">
+            {analytics.providerDistribution.slice(0, 3).map((provider, index) => (
+              <div key={index} className="flex justify-between">
                 <span className="text-sm">{provider.provider_name}</span>
-                <span className="text-sm font-medium">{formatCurrency(provider.totalValue)}</span>
+                <span className="text-sm font-medium">{formatCurrency(provider.total_value)}</span>
               </div>
             ))}
           </div>

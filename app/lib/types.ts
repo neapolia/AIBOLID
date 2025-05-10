@@ -68,28 +68,24 @@ export interface InvoiceProduct {
 
 export interface StorageAnalytics {
   totalProducts: number;
+  lowStockProducts: number;
   totalValue: number;
-  lowStockProducts: {
-    id: string;
-    name: string;
-    article: string;
-    count: number;
-  }[];
   topProducts: {
     id: string;
     name: string;
     article: string;
     count: number;
+    price: number;
+    provider_name: string;
   }[];
   providerDistribution: {
-    provider_id: string;
     provider_name: string;
-    productCount: number;
-    totalValue: number;
+    product_count: number;
+    total_value: number;
   }[];
   monthlyMovements: {
     month: string;
-    additions: number;
-    removals: number;
+    total_movements: number;
+    total_value: number;
   }[];
 } 

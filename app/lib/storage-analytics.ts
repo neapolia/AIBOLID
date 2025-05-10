@@ -7,57 +7,48 @@ const sql = postgres(process.env.POSTGRES_URL!);
 
 export async function getStorageAnalytics(): Promise<StorageAnalytics> {
   try {
-    // Общая статистика
+    // Получаем общую статистику
     const totalStats = await sql`
       SELECT 
         COUNT(*) as total_products,
-        COALESCE(SUM(price * count), 0) as total_value
-      FROM polina_products
+        SUM(CASE WHEN p.count <= 5 THEN 1 ELSE 0 END) as low_stock_products,
+        COALESCE(SUM(p.price * p.count), 0) as total_value
+      FROM polina_products p
     `;
 
-    // Товары с низким остатком
-    const lowStockProducts = await sql`
-      SELECT 
-        id,
-        name,
-        article,
-        count
-      FROM polina_products
-      WHERE count <= 5
-      ORDER BY count ASC
-    `;
-
-    // Топ товаров по количеству
+    // Получаем топ продуктов по количеству
     const topProducts = await sql`
       SELECT 
-        id,
-        name,
-        article,
-        count
-      FROM polina_products
-      ORDER BY count DESC
+        p.id,
+        p.name,
+        p.article,
+        p.count,
+        p.price,
+        pp.name as provider_name
+      FROM polina_products p
+      LEFT JOIN polina_providers pp ON p.provider_id = pp.id
+      ORDER BY p.count DESC
       LIMIT 5
     `;
 
-    // Распределение по поставщикам
+    // Получаем распределение по поставщикам
     const providerDistribution = await sql`
       SELECT 
-        p.provider_id,
         pp.name as provider_name,
-        COUNT(*) as product_count,
+        COUNT(p.id) as product_count,
         COALESCE(SUM(p.price * p.count), 0) as total_value
       FROM polina_products p
-      JOIN polina_providers pp ON p.provider_id = pp.id
-      GROUP BY p.provider_id, pp.name
-      ORDER BY total_value DESC
+      LEFT JOIN polina_providers pp ON p.provider_id = pp.id
+      GROUP BY pp.name
+      ORDER BY product_count DESC
     `;
 
     // Движение товаров по месяцам
     const monthlyMovements = await sql`
       SELECT 
         DATE_TRUNC('month', created_at) as month,
-        COALESCE(SUM(CASE WHEN operation = 'add' THEN count ELSE 0 END), 0) as additions,
-        COALESCE(SUM(CASE WHEN operation = 'remove' THEN count ELSE 0 END), 0) as removals
+        COUNT(*) as total_movements,
+        COALESCE(SUM(count), 0) as total_value
       FROM polina_storage_history
       GROUP BY DATE_TRUNC('month', created_at)
       ORDER BY month DESC
@@ -69,30 +60,26 @@ export async function getStorageAnalytics(): Promise<StorageAnalytics> {
     }
 
     return {
-      totalProducts: Number(totalStats[0]?.total_products || 0),
-      totalValue: Number(totalStats[0]?.total_value || 0),
-      lowStockProducts: lowStockProducts?.map(row => ({
-        id: row.id,
-        name: row.name,
-        article: row.article,
-        count: Number(row.count || 0)
-      })) || [],
-      topProducts: topProducts?.map(row => ({
-        id: row.id,
-        name: row.name,
-        article: row.article,
-        count: Number(row.count || 0)
-      })) || [],
-      providerDistribution: providerDistribution?.map(row => ({
-        provider_id: row.provider_id,
-        provider_name: row.provider_name,
-        productCount: Number(row.product_count || 0),
-        totalValue: Number(row.total_value || 0)
-      })) || [],
+      totalProducts: Number(totalStats[0].total_products),
+      lowStockProducts: Number(totalStats[0].low_stock_products),
+      totalValue: Number(totalStats[0].total_value),
+      topProducts: topProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        article: p.article,
+        count: Number(p.count),
+        price: Number(p.price),
+        provider_name: p.provider_name
+      })),
+      providerDistribution: providerDistribution.map(p => ({
+        provider_name: p.provider_name,
+        product_count: Number(p.product_count),
+        total_value: Number(p.total_value)
+      })),
       monthlyMovements: monthlyMovements?.map(row => ({
         month: row.month?.toISOString() || new Date().toISOString(),
-        additions: Number(row.additions || 0),
-        removals: Number(row.removals || 0)
+        total_movements: Number(row.total_movements || 0),
+        total_value: Number(row.total_value || 0)
       })) || []
     };
   } catch (error) {
@@ -100,8 +87,8 @@ export async function getStorageAnalytics(): Promise<StorageAnalytics> {
     // Возвращаем пустые данные вместо ошибки
     return {
       totalProducts: 0,
+      lowStockProducts: 0,
       totalValue: 0,
-      lowStockProducts: [],
       topProducts: [],
       providerDistribution: [],
       monthlyMovements: []
