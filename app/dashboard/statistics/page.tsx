@@ -23,7 +23,7 @@ export default async function StatisticsPage() {
   const totalInvoices = invoices.length;
   const deliveredInvoices = invoices.filter(i => i.status === 'closed').length;
   const paidInvoices = invoices.filter(i => i.payment_status === 'paid').length;
-  const inProgressInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'accepted').length;
+  const inProgressInvoices = invoices.filter(i => i.status === 'pending').length;
 
   return (
     <StatisticsClient

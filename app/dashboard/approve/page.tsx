@@ -1,34 +1,18 @@
-'use client';
+import { fetchInvoices } from '@/app/lib/data';
+import ApproveTable from './approve-table';
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
-import { fetchInvoices } from '@/app/lib/data';
-import { InvoicesTable } from '@/app/lib/definitions';
-import ApproveTable from './approve-table';
-
-export default function Page() {
-  const [invoices, setInvoices] = useState<InvoicesTable[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadInvoices = async () => {
-      try {
-        const data = await fetchInvoices();
-        setInvoices(data);
-      } catch (error) {
-        console.error('Error loading invoices:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInvoices();
-  }, []);
-
-  if (isLoading) {
-    return <div>Loading...</div>;
+export default async function Page() {
+  try {
+    const invoices = await fetchInvoices();
+    return <ApproveTable invoices={invoices} />;
+  } catch (error) {
+    console.error('Error loading invoices:', error);
+    return (
+      <div className="text-center py-4">
+        <p className="text-red-500">Ошибка при загрузке заказов</p>
+      </div>
+    );
   }
-
-  return <ApproveTable invoices={invoices} />;
 } 
