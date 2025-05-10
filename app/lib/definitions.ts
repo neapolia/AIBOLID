@@ -48,12 +48,12 @@ export type OrderStatus = 'pending' | 'accepted' | 'rejected' | 'closed';
 export type InvoicesTable = {
   id: string;
   provider_name: string;
-  provider_email: string;
   total_amount: number;
   created_at: string;
   delivery_date: string | null;
   status: OrderStatus | null;
   payment_status: 'pending' | 'paid' | null;
+  docs_url: string | null;
 };
 
 export type FormattedProviders = {
