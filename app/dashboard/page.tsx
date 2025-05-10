@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { getCurrentUser } from '../lib/auth';
 import { redirect } from 'next/navigation';
-import Nav from '../ui/nav';
 
 export const metadata: Metadata = {
   title: "Панель управления",
@@ -15,39 +14,17 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Nav />
-      
-      <main className="p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Панель управления
-          </h1>
-          
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              Добро пожаловать, {email}!
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-indigo-50 p-4 rounded-lg">
-                <h3 className="font-medium text-indigo-900">Статистика</h3>
-                <p className="text-indigo-700 mt-2">Здесь будет статистика</p>
-              </div>
-              
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-medium text-green-900">Задачи</h3>
-                <p className="text-green-700 mt-2">Здесь будут задачи</p>
-              </div>
-              
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h3 className="font-medium text-purple-900">Уведомления</h3>
-                <p className="text-purple-700 mt-2">Здесь будут уведомления</p>
-              </div>
-            </div>
-          </div>
+    <main className="flex min-h-screen flex-col p-6">
+      <div className="flex h-20 shrink-0 items-end rounded-lg bg-blue-500 p-4 md:h-52">
+        <h1 className="text-2xl font-bold text-white">Панель управления</h1>
+      </div>
+      <div className="mt-4 flex grow flex-col gap-4 md:flex-row">
+        <div className="flex flex-col justify-center gap-6 rounded-lg bg-gray-50 px-6 py-10 md:w-2/5 md:px-20">
+          <p className="text-xl text-gray-800 md:text-3xl md:leading-normal">
+            Добро пожаловать в систему управления складом
+          </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 } 

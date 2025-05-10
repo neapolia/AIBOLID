@@ -36,6 +36,7 @@ export type LatestInvoice = {
 export type InvoicesTable = {
   id: string;
   provider_name: string;
+  provider_email: string;
   total_amount: number;
   created_at: string;
   delivery_date: string | null;

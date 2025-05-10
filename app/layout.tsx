@@ -6,11 +6,10 @@ import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Acme Dashboard",
-    default: "Acme Dashboard",
+    template: "%s | AIBOLID",
+    default: "AIBOLID",
   },
-  description: "The official Next.js Learn Dashboard built with App Router.",
-  metadataBase: new URL("https://next-learn-dashboard.vercel.sh"),
+  description: "Система управления складом и заказами",
 };
 
 export default function RootLayout({
@@ -19,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body className={`${inter.className} antialiased`}>
         <Providers>
           <div className="flex h-screen flex-col md:flex-row md:overflow-hidden">
