@@ -1,17 +1,16 @@
 'use client';
 
-import { InvoicesTable } from '@/app/lib/definitions';
+import { InvoicesTable, OrderStatus, PaymentStatus } from '@/app/lib/definitions';
 import { updateInvoiceStatus } from '@/app/lib/actions';
 import { useState } from 'react';
 
 export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }) {
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleStatusChange = async (id: string, status: boolean) => {
+  const handleStatusChange = async (id: string, status: OrderStatus) => {
     setIsUpdating(true);
     try {
-      // Передаем строку 'false', как ты уже исправил
-      await updateInvoiceStatus(id, status ? 'paid' : 'unpaid', 'false');
+      await updateInvoiceStatus(id, status, 'pending');
     } catch (error) {
       console.error('Error updating status:', error);
     } finally {
@@ -19,18 +18,16 @@ export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }
     }
   };
   
-  const handlePaymentStatusChange = async (id: string, paymentStatus: boolean) => {
+  const handlePaymentStatusChange = async (id: string, paymentStatus: PaymentStatus) => {
     setIsUpdating(true);
     try {
-      // Преобразуем paymentStatus в строку
-      await updateInvoiceStatus(id, 'pending', paymentStatus ? 'paid' : 'unpaid');
+      await updateInvoiceStatus(id, 'closed', paymentStatus);
     } catch (error) {
       console.error('Error updating payment status:', error);
     } finally {
       setIsUpdating(false);
     }
   };
-  
 
   if (!invoices || invoices.length === 0) {
     return (
@@ -60,30 +57,30 @@ export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }
                   <td className="whitespace-nowrap px-3 py-3">{invoice.id}</td>
                   <td className="whitespace-nowrap px-3 py-3">{invoice.provider_name}</td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {invoice.status ? 'Доставлен' : 'Ожидает'}
+                    {invoice.status === 'closed' ? 'Доставлен' : 'Ожидает'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {invoice.payment_status ? 'Оплачен' : 'Не оплачен'}
+                    {invoice.payment_status === 'paid' ? 'Оплачен' : 'Не оплачен'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <div className="flex gap-2">
                       <select
                         disabled={isUpdating}
-                        onChange={(e) => handleStatusChange(invoice.id, e.target.value === 'true')}
+                        onChange={(e) => handleStatusChange(invoice.id, e.target.value as OrderStatus)}
                         className="rounded-md border p-2"
-                        defaultValue={String(invoice.status)}
+                        value={invoice.status || 'pending'}
                       >
-                        <option value="false">Ожидает</option>
-                        <option value="true">Доставлен</option>
+                        <option value="pending">Ожидает</option>
+                        <option value="closed">Доставлен</option>
                       </select>
                       <select
-                        disabled={isUpdating || !invoice.status}
-                        onChange={(e) => handlePaymentStatusChange(invoice.id, e.target.value === 'true')}
+                        disabled={isUpdating || invoice.status !== 'closed'}
+                        onChange={(e) => handlePaymentStatusChange(invoice.id, e.target.value as PaymentStatus)}
                         className="rounded-md border p-2"
-                        defaultValue={String(invoice.payment_status)}
+                        value={invoice.payment_status || 'pending'}
                       >
-                        <option value="false">Не оплачен</option>
-                        <option value="true">Оплачен</option>
+                        <option value="pending">Не оплачен</option>
+                        <option value="paid">Оплачен</option>
                       </select>
                     </div>
                   </td>

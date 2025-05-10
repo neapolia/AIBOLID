@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import postgres from "postgres";
+import { OrderStatus, PaymentStatus } from "./definitions";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
@@ -33,8 +34,8 @@ export async function createInvoice(
 
 export async function updateInvoiceStatus(
   id: string,
-  status: string,
-  paymentStatus: string
+  status: OrderStatus,
+  paymentStatus: PaymentStatus
 ) {
   try {
     await sql`

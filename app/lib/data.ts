@@ -96,7 +96,7 @@ export async function fetchInvoices() {
     return invoices;
   } catch (error) {
     console.error("DB (fetchInvoices):", error);
-    return []; 
+    throw new Error("Failed to fetch invoices");
   }
 }
 
