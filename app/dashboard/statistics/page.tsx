@@ -9,7 +9,7 @@ import {
 } from '@/app/lib/analytics';
 import { fetchInvoices } from '@/app/lib/data';
 
-// Получаем статистику по заказам и отображаем её
+// Статистика по заказам и их статусам
 export default async function StatisticsPage() {
   // Получаем все данные на сервере
   const [monthlyExpenses, providerExpenses, topProducts, totalExpenses, invoices] = await Promise.all([
