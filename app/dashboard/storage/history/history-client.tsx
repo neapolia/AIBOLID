@@ -10,6 +10,7 @@ export default function HistoryClient() {
   const [endDate, setEndDate] = useState('');
   const [history, setHistory] = useState<StorageHistoryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -17,11 +18,24 @@ export default function HistoryClient() {
 
   const loadHistory = async () => {
     setIsLoading(true);
+    setError(null);
     try {
+      console.log('Loading history...');
       const data = await getStorageHistory();
+      console.log('Received data:', data);
+      
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+      
+      if (data.length === 0) {
+        console.log('Empty data array received');
+      }
+      
       setHistory(data);
     } catch (error) {
-      console.error('Error loading history:', error);
+      console.error('Error in loadHistory:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load history');
     } finally {
       setIsLoading(false);
     }
@@ -29,11 +43,13 @@ export default function HistoryClient() {
 
   const handleFilter = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const filteredHistory = await getStorageHistory(undefined, startDate, endDate);
       setHistory(filteredHistory);
     } catch (error) {
-      console.error('Error filtering history:', error);
+      console.error('Error in handleFilter:', error);
+      setError(error instanceof Error ? error.message : 'Failed to filter history');
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +74,13 @@ export default function HistoryClient() {
   return (
     <main className="p-6">
       <h1 className="mb-4 text-xl md:text-2xl">История изменений склада</h1>
+      
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <p className="font-bold">Ошибка:</p>
+          <p>{error}</p>
+        </div>
+      )}
       
       {/* Фильтры */}
       <div className="mb-4 flex gap-4 items-end">

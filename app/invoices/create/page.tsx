@@ -13,8 +13,15 @@ export default async function Page(props: {
 
   const handleCreateInvoice = async (products: Record<string, number>) => {
     "use server";
-    await createInvoice(providerId as string, products);
-    redirect("/invoices");
+    try {
+      const result = await createInvoice(providerId as string, products);
+      if (result.success) {
+        redirect("/dashboard/approve");
+      }
+    } catch (error) {
+      console.error('Error creating invoice:', error);
+      throw error;
+    }
   };
 
   const providers = await fetchProviders();

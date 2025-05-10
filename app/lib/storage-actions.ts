@@ -140,7 +140,10 @@ export async function getStorageHistory(
   endDate?: string
 ) {
   try {
-    let query = sql`
+    console.log('Starting getStorageHistory...');
+    
+    // Простой запрос без фильтров для отладки
+    const result = await sql`
       SELECT 
         sh.id,
         sh.product_id,
@@ -153,27 +156,133 @@ export async function getStorageHistory(
       FROM polina_storage_history sh
       JOIN polina_products p ON sh.product_id = p.id
       LEFT JOIN polina_invoices i ON sh.invoice_id = i.id
-      WHERE 1=1
+      ORDER BY sh.created_at DESC
     `;
 
-    if (productId) {
-      query = sql`${query} AND sh.product_id = ${productId}`;
+    console.log('Raw query result:', result);
+
+    // Проверяем структуру данных
+    if (result && result.length > 0) {
+      console.log('First record structure:', {
+        id: result[0].id,
+        product_id: result[0].product_id,
+        count: result[0].count,
+        operation: result[0].operation,
+        created_at: result[0].created_at,
+        product_name: result[0].product_name,
+        article: result[0].article,
+        invoice_id: result[0].invoice_id
+      });
     }
 
-    if (startDate) {
-      query = sql`${query} AND sh.created_at >= ${startDate}`;
-    }
-
-    if (endDate) {
-      query = sql`${query} AND sh.created_at <= ${endDate}`;
-    }
-
-    query = sql`${query} ORDER BY sh.created_at DESC`;
-
-    const result = await query;
     return result as unknown as StorageHistoryRecord[];
   } catch (error) {
-    console.error('Error getting storage history:', error);
-    return [];
+    console.error('Error in getStorageHistory:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
+    throw error; // Пробрасываем ошибку дальше для отладки
+  }
+}
+
+// Функция для проверки существования таблиц и данных
+export async function checkTables() {
+  try {
+    console.log('Checking tables...');
+    
+    // Проверяем таблицу polina_storage_history
+    const historyCount = await sql`
+      SELECT COUNT(*) as count FROM polina_storage_history
+    `;
+    console.log('Storage history records count:', historyCount[0].count);
+
+    // Проверяем таблицу polina_products
+    const productsCount = await sql`
+      SELECT COUNT(*) as count FROM polina_products
+    `;
+    console.log('Products count:', productsCount[0].count);
+
+    // Проверяем таблицу polina_invoices
+    const invoicesCount = await sql`
+      SELECT COUNT(*) as count FROM polina_invoices
+    `;
+    console.log('Invoices count:', invoicesCount[0].count);
+
+    return {
+      historyCount: historyCount[0].count,
+      productsCount: productsCount[0].count,
+      invoicesCount: invoicesCount[0].count
+    };
+  } catch (error) {
+    console.error('Error checking tables:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
+    throw error;
+  }
+}
+
+// Функция для проверки содержимого таблиц
+export async function checkTableContents() {
+  try {
+    console.log('Checking table contents...');
+    
+    // Проверяем содержимое polina_storage_history
+    const historyData = await sql`
+      SELECT * FROM polina_storage_history LIMIT 5
+    `;
+    console.log('Storage history data:', historyData);
+
+    // Проверяем содержимое polina_products
+    const productsData = await sql`
+      SELECT * FROM polina_products LIMIT 5
+    `;
+    console.log('Products data:', productsData);
+
+    // Проверяем содержимое polina_invoices
+    const invoicesData = await sql`
+      SELECT * FROM polina_invoices LIMIT 5
+    `;
+    console.log('Invoices data:', invoicesData);
+
+    // Проверяем связи между таблицами
+    const joinedData = await sql`
+      SELECT 
+        sh.id,
+        sh.product_id,
+        sh.count,
+        sh.operation,
+        sh.created_at,
+        p.name as product_name,
+        p.article,
+        i.id as invoice_id
+      FROM polina_storage_history sh
+      JOIN polina_products p ON sh.product_id = p.id
+      LEFT JOIN polina_invoices i ON sh.invoice_id = i.id
+      LIMIT 5
+    `;
+    console.log('Joined data:', joinedData);
+
+    return {
+      historyData,
+      productsData,
+      invoicesData,
+      joinedData
+    };
+  } catch (error) {
+    console.error('Error checking table contents:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
+    throw error;
   }
 } 

@@ -8,6 +8,11 @@ import { FormattedProviders, Product } from "@/app/lib/definitions";
 import { formatCurrency } from "@/app/lib/utils";
 import Button from "../button";
 
+type ProviderOption = {
+  value: string;
+  label: string;
+};
+
 export default function Form({
   providerId,
   providers,
@@ -20,7 +25,7 @@ export default function Form({
   onSubmit: (products: Record<string, number>) => void;
 }) {
   const [state, setState] = useState<Record<string, number>>({});
-  const searchParams = useSearchParams(); // Получаем текущие параметры поиска
+  const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
 
@@ -28,27 +33,24 @@ export default function Form({
     setState({});
   }, [providerId]);
 
-  // Преобразуем searchParams в объект для работы с ним
   const params = new URLSearchParams(searchParams.toString());
 
-  // Формируем опции для Select из списка поставщиков
   const providerOptions = providers.map((p) => ({
     value: p.id,
     label: p.name,
   }));
 
-  // Обработчик изменения поставщика
+  const selectedProvider = providerId ? providerOptions.find((o) => o.value === providerId) : null;
+
   const handleProviderChange = (value: string) => {
-    params.set("providerId", value); // Обновляем параметры запроса
-    replace(`${pathname}?${params.toString()}`); // Обновляем URL с новыми параметрами
+    params.set("providerId", value);
+    replace(`${pathname}?${params.toString()}`);
   };
 
-  // Обработчик изменения количества товара
   const onCountChange = (e: ChangeEvent<HTMLInputElement>) => {
     setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
   };
 
-  // Проверяем, нужно ли показывать кнопку отправки
   const isShowSubmitButton =
     Object.values(state).length &&
     Object.values(state)?.reduce((acc, v) => acc + v) >= 1;
@@ -63,9 +65,9 @@ export default function Form({
 
         <Select
           placeholder="Выберите поставщика"
-          value={providerOptions.find((o) => o.value === providerId)}
+          value={selectedProvider}
           isClearable
-          onChange={(v: { value: string; label: string } | null) => handleProviderChange(v?.value || "")}
+          onChange={(v: ProviderOption | null) => handleProviderChange(v?.value || "")}
           options={providerOptions}
           isSearchable={false}
         />
