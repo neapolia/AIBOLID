@@ -2,6 +2,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { lusitana } from "@/app/ui/fonts";
 import { fetchLatestInvoices } from "@/app/lib/data";
+import { formatCurrency } from "@/app/lib/utils";
 
 export default async function LatestInvoices() {
   const latestInvoices = await fetchLatestInvoices();
@@ -27,17 +28,17 @@ export default async function LatestInvoices() {
                 <div className="flex items-center">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold md:text-base">
-                      {invoice.name}
+                      {invoice.provider_name}
                     </p>
                     <p className="hidden text-sm text-gray-500 sm:block">
-                      {invoice.email}
+                      {new Date(invoice.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 <p
                   className={`${lusitana.className} truncate text-sm font-medium md:text-base`}
                 >
-                  {invoice.amount}
+                  {formatCurrency(invoice.total_amount)}
                 </p>
               </div>
             );
