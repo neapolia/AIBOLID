@@ -24,7 +24,7 @@ const links = [
     subLinks: [
       {
         name: "Материалы",
-        href: "/dashboard/storage",
+        href: "/dashboard/storage/products",
       },
       {
         name: "История",

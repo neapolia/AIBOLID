@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
- 
-export default function StoragePage() {
-  redirect('/dashboard/storage/history');
+import ProductsClient from './products/products-client';
+
+export const dynamic = 'force-dynamic';
+
+export default async function StoragePage() {
+  return <ProductsClient />;
 } 

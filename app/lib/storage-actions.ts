@@ -174,6 +174,7 @@ export async function getStorageHistory(): Promise<StorageHistoryRecord[]> {
 // Функция для получения данных о продуктах на складе
 export async function getProducts(): Promise<Product[]> {
   try {
+    console.log('Fetching products from database...');
     const products = await sql`
       SELECT 
         p.id,
@@ -187,8 +188,9 @@ export async function getProducts(): Promise<Product[]> {
       LEFT JOIN polina_providers pp ON p.provider_id = pp.id
       ORDER BY p.name ASC
     `;
+    console.log('Products fetched:', products);
 
-    return products.map(row => ({
+    const mappedProducts = products.map(row => ({
       id: row.id,
       name: row.name,
       article: row.article,
@@ -197,9 +199,12 @@ export async function getProducts(): Promise<Product[]> {
       provider_id: row.provider_id,
       provider_name: row.provider_name
     }));
+    console.log('Mapped products:', mappedProducts);
+
+    return mappedProducts;
   } catch (error) {
-    console.error('Error fetching products:', error);
-    throw new Error('Failed to fetch products');
+    console.error('Error in getProducts:', error);
+    throw new Error('Failed to get products');
   }
 }
 
@@ -328,44 +333,12 @@ export async function checkTableContents() {
     `;
     console.log('Products data:', productsData);
 
-    // Проверяем содержимое polina_invoices
-    const invoicesData = await sql`
-      SELECT * FROM polina_invoices LIMIT 5
-    `;
-    console.log('Invoices data:', invoicesData);
-
-    // Проверяем связи между таблицами
-    const joinedData = await sql`
-      SELECT 
-        sh.id,
-        sh.product_id,
-        sh.count,
-        sh.operation,
-        sh.created_at,
-        p.name as product_name,
-        p.article,
-        i.id as invoice_id
-      FROM polina_storage_history sh
-      JOIN polina_products p ON sh.product_id = p.id
-      LEFT JOIN polina_invoices i ON sh.invoice_id = i.id
-      LIMIT 5
-    `;
-    console.log('Joined data:', joinedData);
-
     return {
       historyData,
-      productsData,
-      invoicesData,
-      joinedData
+      productsData
     };
   } catch (error) {
     console.error('Error checking table contents:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
-    }
     throw error;
   }
-} 
+}
