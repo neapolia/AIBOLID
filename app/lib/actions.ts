@@ -3,69 +3,82 @@
 import { revalidatePath } from "next/cache";
 import postgres from "postgres";
 import { OrderStatus, PaymentStatus } from "./definitions";
+import { updateStorageFromInvoice } from "./storage-actions";
 
 const sql = postgres(process.env.POSTGRES_URL!);
 
-export async function createInvoice(
-  providerId: string,
-  products: Record<string, number>
-) {
+type CreateInvoiceParams = {
+  providerId: string;
+  products: Record<string, number>;
+  material?: {
+    id?: string;
+    name: string;
+    price: number;
+  } | null;
+};
+
+type CreateInvoiceResult = {
+  success: boolean;
+  invoiceId?: string;
+  error?: string;
+};
+
+export async function createInvoice({ providerId, products, material }: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   if (!providerId) {
-    throw new Error("Не выбран поставщик");
+    return { success: false, error: 'Provider ID is required' };
   }
 
   if (!products || Object.keys(products).length === 0) {
-    throw new Error("Не выбраны товары");
+    return { success: false, error: 'Products are required' };
   }
 
   try {
-    console.log('Creating invoice for provider:', providerId);
-    console.log('Products:', products);
+    console.log('Creating invoice with:', { providerId, products, material });
 
-    // Создаем заказ
-    const response = await sql`
+    const result = await sql`
       INSERT INTO polina_invoices (
-        created_at, 
-        delivery_date, 
-        provider_id, 
-        docs_url, 
-        status, 
+        provider_id,
+        status,
         payment_status,
+        material_name,
+        material_price,
         is_auto_order
-      )
-      VALUES (
-        ${new Date().toISOString()}, 
-        ${null}, 
-        ${providerId}, 
-        ${null}, 
-        'pending', 
+      ) VALUES (
+        ${providerId},
         'pending',
-        ${false}
+        'pending',
+        ${material?.name || null},
+        ${material?.price || null},
+        false
       )
       RETURNING id;
     `;
 
-    console.log('Created invoice with ID:', response[0].id);
+    const invoiceId = result[0].id;
 
-    // Добавляем товары в заказ
-    await Promise.all(
-      Object.entries(products).map(async ([productId, count]) => {
-        if (count > 0) {
-          console.log(`Adding product ${productId} with count ${count}`);
-          await sql`
-            INSERT INTO polina_invoices_products (product_id, invoice_id, count)
-            VALUES (${productId}, ${response[0].id}, ${count})
-          `;
-        }
-      })
-    );
+    // Insert products
+    for (const [productId, count] of Object.entries(products)) {
+      if (count > 0) {
+        await sql`
+          INSERT INTO polina_invoices_products (
+            invoice_id,
+            product_id,
+            count
+          ) VALUES (
+            ${invoiceId},
+            ${productId},
+            ${count}
+          );
+        `;
+      }
+    }
 
-    console.log('Successfully created invoice');
+    console.log('Invoice created successfully:', invoiceId);
     revalidatePath("/dashboard/approve");
-    return { success: true, invoiceId: response[0].id };
-  } catch (err) {
-    console.error('Error creating invoice:', err);
-    throw new Error("Не удалось создать заказ");
+    return { success: true, invoiceId };
+  } catch (error) {
+    console.error('Error creating invoice:', error);
+    return { success: false, error: 'Failed to create invoice' };
   }
 }
 
@@ -75,12 +88,18 @@ export async function updateInvoiceStatus(
   paymentStatus: PaymentStatus
 ) {
   try {
+    // Обновляем статус заказа
     await sql`
       UPDATE polina_invoices
       SET status = ${status},
           payment_status = ${paymentStatus}
       WHERE id = ${id}
     `;
+
+    // Если заказ доставлен и оплачен, перемещаем товары на склад
+    if (status === 'closed' && paymentStatus === 'paid') {
+      await updateStorageFromInvoice(id);
+    }
 
     revalidatePath('/dashboard');
     return { message: 'Статус заказа обновлен' };

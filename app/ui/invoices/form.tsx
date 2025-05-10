@@ -7,10 +7,19 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormattedProviders, Product } from "@/app/lib/definitions";
 import { formatCurrency } from "@/app/lib/utils";
 import Button from "../button";
+import { fetchFilteredStorage } from "@/app/lib/data";
 
 type ProviderOption = {
   value: string;
   label: string;
+};
+
+type StorageItem = {
+  id: string;
+  name: string;
+  article: string;
+  price: number;
+  count: number;
 };
 
 export default function Form({
@@ -18,20 +27,41 @@ export default function Form({
   providers,
   products,
   onSubmit,
+  isSubmitting,
+  onMaterialSelect
 }: {
   products: Product[] | null;
   providerId: string | null;
   providers: Omit<FormattedProviders, "inn" | "phone" | "site">[];
   onSubmit: (products: Record<string, number>) => void;
+  isSubmitting?: boolean;
+  onMaterialSelect?: (material: { id?: string; name: string; price: number } | null) => void;
 }) {
   const [state, setState] = useState<Record<string, number>>({});
+  const [storageItems, setStorageItems] = useState<StorageItem[]>([]);
+  const [selectedMaterial, setSelectedMaterial] = useState<StorageItem | null>(null);
+  const [customMaterial, setCustomMaterial] = useState({ name: '', price: 0 });
+  const [isCustomMaterial, setIsCustomMaterial] = useState(false);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
 
   useEffect(() => {
     setState({});
+    loadStorageItems();
   }, [providerId]);
+
+  const loadStorageItems = async () => {
+    try {
+      const items = await fetchFilteredStorage('');
+      setStorageItems(items.map(item => ({
+        ...item,
+        price: Number(item.price)
+      })));
+    } catch (error) {
+      console.error('Error loading storage items:', error);
+    }
+  };
 
   const params = new URLSearchParams(searchParams.toString());
 
@@ -51,13 +81,54 @@ export default function Form({
     setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
   };
 
+  const handleMaterialChange = (option: any) => {
+    if (option === null) {
+      setSelectedMaterial(null);
+      setIsCustomMaterial(false);
+      onMaterialSelect?.(null);
+    } else if (option.value === 'custom') {
+      setIsCustomMaterial(true);
+      setSelectedMaterial(null);
+      onMaterialSelect?.(null);
+    } else {
+      setSelectedMaterial(option.data);
+      setIsCustomMaterial(false);
+      onMaterialSelect?.(option.data);
+    }
+  };
+
+  const handleCustomMaterialChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newCustomMaterial = {
+      ...customMaterial,
+      [name]: name === 'price' ? Number(value) : value
+    };
+    setCustomMaterial(newCustomMaterial);
+    onMaterialSelect?.(newCustomMaterial);
+  };
+
+  const materialOptions = [
+    ...storageItems.map(item => ({
+      value: item.id,
+      label: `${item.name} (${item.article}) - ${formatCurrency(item.price)}`,
+      data: item
+    })),
+    { value: 'custom', label: '+ Добавить новый материал' }
+  ];
+
   const isShowSubmitButton =
     Object.values(state).length &&
     Object.values(state)?.reduce((acc, v) => acc + v) >= 1;
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(state);
+  };
+
   return (
     <section className="w-full pt-6 pb-24">
       <h1 className="text-2xl">Создать новый заказ</h1>
+      
       <div className="border-b border-gray-200 py-6">
         <span className="block font-medium text-gray-900 mb-2">
           Выберите поставщика
@@ -71,6 +142,68 @@ export default function Form({
           options={providerOptions}
           isSearchable={false}
         />
+      </div>
+
+      <div className="border-b border-gray-200 py-6">
+        <span className="block font-medium text-gray-900 mb-2">
+          Выберите материал
+        </span>
+
+        <Select
+          placeholder="Выберите материал или добавьте новый"
+          value={selectedMaterial ? {
+            value: selectedMaterial.id,
+            label: `${selectedMaterial.name} (${selectedMaterial.article}) - ${formatCurrency(selectedMaterial.price)}`
+          } : null}
+          isClearable
+          onChange={handleMaterialChange}
+          options={materialOptions}
+          isSearchable
+        />
+
+        {isCustomMaterial && (
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Название материала</label>
+              <input
+                type="text"
+                name="name"
+                value={customMaterial.name}
+                onChange={handleCustomMaterialChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Цена закупки</label>
+              <input
+                type="number"
+                name="price"
+                value={customMaterial.price}
+                onChange={handleCustomMaterialChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {(selectedMaterial || isCustomMaterial) && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-medium text-gray-900">Информация о материале</h3>
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-gray-600">
+                Название: {selectedMaterial?.name || customMaterial.name}
+              </p>
+              {selectedMaterial && (
+                <p className="text-sm text-gray-600">
+                  Артикул: {selectedMaterial.article}
+                </p>
+              )}
+              <p className="text-sm text-gray-600">
+                Цена закупки: {formatCurrency(selectedMaterial?.price || customMaterial.price)}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 my-10">
@@ -96,7 +229,9 @@ export default function Form({
 
       <div className="flex justify-end gap-1">
         {isShowSubmitButton ? (
-          <Button onClick={() => onSubmit(state)}>Оформить заказ</Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Отправка...' : 'Оформить заказ'}
+          </Button>
         ) : null}
         <Link
           href="/invoices"

@@ -51,7 +51,16 @@ export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }
   const handleViewDetails = async (id: string) => {
     try {
       const details = await getInvoiceDetails(id);
-      setSelectedInvoice(details);
+      const serializedDetails = {
+        ...details,
+        created_at: new Date(details.created_at).toISOString(),
+        products: details.products.map(product => ({
+          ...product,
+          price: Number(product.price),
+          count: Number(product.count)
+        }))
+      };
+      setSelectedInvoice(serializedDetails);
       setIsModalOpen(true);
     } catch (error) {
       console.error('Error loading invoice details:', error);
@@ -83,7 +92,12 @@ export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }
               </thead>
               <tbody className="bg-white">
                 {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="w-full border-b py-3 text-sm">
+                  <tr 
+                    key={invoice.id} 
+                    className={`w-full border-b py-3 text-sm ${
+                      invoice.status === 'closed' ? 'bg-gray-100' : ''
+                    }`}
+                  >
                     <td className="whitespace-nowrap px-3 py-3">{invoice.id}</td>
                     <td className="whitespace-nowrap px-3 py-3">{invoice.provider_name}</td>
                     <td className="whitespace-nowrap px-3 py-3">
