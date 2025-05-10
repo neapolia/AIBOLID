@@ -43,7 +43,7 @@ export type LatestInvoiceRaw = Omit<LatestInvoice, "amount"> & {
   amount: number;
 };
 
-export type OrderStatus = 'created' | 'approved' | 'delivered';
+export type OrderStatus = 'pending' | 'accepted' | 'rejected' | 'closed';
 
 export type InvoicesTable = {
   id: string;
