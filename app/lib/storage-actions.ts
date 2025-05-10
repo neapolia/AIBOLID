@@ -175,22 +175,24 @@ export async function getStorageHistory(): Promise<StorageHistoryRecord[]> {
 export async function getProducts(): Promise<Product[]> {
   try {
     console.log('Fetching products from database...');
+    
     const products = await sql`
       SELECT 
         p.id,
         p.name,
         p.article,
         p.price,
-        p.count,
         p.provider_id,
-        pp.name as provider_name
+        pp.name as provider_name,
+        COALESCE(s.count, 0) as count
       FROM polina_products p
       LEFT JOIN polina_providers pp ON p.provider_id = pp.id
+      LEFT JOIN polina_storage s ON p.id = s.product_id
       ORDER BY p.name ASC
     `;
-    console.log('Products fetched:', products);
+    console.log('Products data:', products);
 
-    const mappedProducts = products.map(row => ({
+    const result = products.map(row => ({
       id: row.id,
       name: row.name,
       article: row.article,
@@ -199,11 +201,17 @@ export async function getProducts(): Promise<Product[]> {
       provider_id: row.provider_id,
       provider_name: row.provider_name
     }));
-    console.log('Mapped products:', mappedProducts);
 
-    return mappedProducts;
+    console.log('Final result:', result);
+    return result;
   } catch (error) {
     console.error('Error in getProducts:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
     throw new Error('Failed to get products');
   }
 }
@@ -244,29 +252,47 @@ export async function fetchFilteredStorage(query: string): Promise<Product[]> {
 
 export async function updateProductCount(productId: string, newCount: number) {
   try {
-    const currentProduct = await sql`
-      SELECT count FROM polina_products WHERE id = ${productId}
+    // Проверяем существование продукта
+    const product = await sql`
+      SELECT id FROM polina_products WHERE id = ${productId}
     `;
     
-    if (currentProduct.length === 0) {
+    if (product.length === 0) {
       throw new Error('Product not found');
     }
 
-    const currentCount = Number(currentProduct[0].count);
+    // Получаем текущее количество из polina_storage
+    const currentStorage = await sql`
+      SELECT count FROM polina_storage WHERE product_id = ${productId}
+    `;
+    
+    const currentCount = currentStorage.length > 0 ? Number(currentStorage[0].count) : 0;
     const difference = newCount - currentCount;
 
-    await sql`
-      UPDATE polina_products
-      SET count = ${newCount}
-      WHERE id = ${productId}
-    `;
+    // Обновляем или создаем запись в polina_storage
+    if (currentStorage.length > 0) {
+      await sql`
+        UPDATE polina_storage
+        SET count = ${newCount}
+        WHERE product_id = ${productId}
+      `;
+    } else {
+      await sql`
+        INSERT INTO polina_storage (product_id, count)
+        VALUES (${productId}, ${newCount})
+      `;
+    }
 
+    // Записываем изменение в историю
     await logStorageChange(
       productId,
       Math.abs(difference),
       'manual',
       difference > 0 ? 'add' : 'remove'
     );
+
+    // Проверяем минимальный остаток
+    await checkMinStock(productId, newCount);
 
     revalidatePath('/storage/products');
     return { success: true, message: 'Количество успешно обновлено' };

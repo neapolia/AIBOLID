@@ -29,6 +29,7 @@ export async function GET() {
         provider_id UUID NOT NULL REFERENCES polina_providers(id),
         price INTEGER NOT NULL,
         article VARCHAR(255) NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );

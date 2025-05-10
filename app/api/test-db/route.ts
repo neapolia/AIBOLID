@@ -9,7 +9,7 @@ export async function GET() {
         p.id,
         p.name,
         p.article,
-        p.count,
+        COALESCE(p.count, 0) as count,
         p.price,
         pp.name as provider_name
       FROM polina_products p

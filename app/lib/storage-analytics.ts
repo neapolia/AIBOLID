@@ -7,13 +7,14 @@ const sql = postgres(process.env.POSTGRES_URL!);
 
 export async function getStorageAnalytics(): Promise<StorageAnalytics> {
   try {
-    // Получаем общую статистику
+    // Получаем общую статистику, объединяя products и storage
     const totalStats = await sql`
       SELECT 
-        COUNT(*) as total_products,
-        SUM(CASE WHEN p.count <= 5 THEN 1 ELSE 0 END) as low_stock_products,
-        COALESCE(SUM(p.price * p.count), 0) as total_value
+        COUNT(DISTINCT p.id) as total_products,
+        SUM(CASE WHEN COALESCE(s.count, 0) <= 5 THEN 1 ELSE 0 END) as low_stock_products,
+        SUM(p.price * COALESCE(s.count, 0)) as total_value
       FROM polina_products p
+      LEFT JOIN polina_storage s ON p.id = s.product_id
     `;
 
     // Получаем топ продуктов по количеству
@@ -22,12 +23,13 @@ export async function getStorageAnalytics(): Promise<StorageAnalytics> {
         p.id,
         p.name,
         p.article,
-        p.count,
         p.price,
+        COALESCE(s.count, 0) as count,
         pp.name as provider_name
       FROM polina_products p
+      LEFT JOIN polina_storage s ON p.id = s.product_id
       LEFT JOIN polina_providers pp ON p.provider_id = pp.id
-      ORDER BY p.count DESC
+      ORDER BY COALESCE(s.count, 0) DESC
       LIMIT 5
     `;
 
@@ -35,20 +37,21 @@ export async function getStorageAnalytics(): Promise<StorageAnalytics> {
     const providerDistribution = await sql`
       SELECT 
         pp.name as provider_name,
-        COUNT(p.id) as product_count,
-        COALESCE(SUM(p.price * p.count), 0) as total_value
+        COUNT(DISTINCT p.id) as product_count,
+        SUM(p.price * COALESCE(s.count, 0)) as total_value
       FROM polina_products p
-      LEFT JOIN polina_providers pp ON p.provider_id = pp.id
+      LEFT JOIN polina_storage s ON p.id = s.product_id
+      JOIN polina_providers pp ON p.provider_id = pp.id
       GROUP BY pp.name
       ORDER BY product_count DESC
     `;
 
-    // Движение товаров по месяцам
+    // Движение товаров по месяцам из истории
     const monthlyMovements = await sql`
       SELECT 
         DATE_TRUNC('month', created_at) as month,
         COUNT(*) as total_movements,
-        COALESCE(SUM(count), 0) as total_value
+        SUM(count) as total_value
       FROM polina_storage_history
       GROUP BY DATE_TRUNC('month', created_at)
       ORDER BY month DESC
@@ -84,7 +87,6 @@ export async function getStorageAnalytics(): Promise<StorageAnalytics> {
     };
   } catch (error) {
     console.error('Error fetching storage analytics:', error);
-    // Возвращаем пустые данные вместо ошибки
     return {
       totalProducts: 0,
       lowStockProducts: 0,
