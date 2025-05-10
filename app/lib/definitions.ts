@@ -21,7 +21,7 @@ export type Revenue = {
   revenue: number;
 };
 
-export type OrderStatus = 'pending' | 'accepted' | 'rejected' | 'closed';
+export type OrderStatus = 'pending' | 'closed';
 export type PaymentStatus = 'pending' | 'paid';
 
 export type LatestInvoice = {
