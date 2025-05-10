@@ -90,8 +90,24 @@ export async function updateInvoiceStatus(
   }
 }
 
+type InvoiceDetails = {
+  id: string;
+  created_at: string;
+  status: string;
+  payment_status: string;
+  provider_name: string;
+  products: {
+    id: string;
+    name: string;
+    article: string;
+    price: number;
+    count: number;
+  }[];
+  total_amount: number;
+};
+
 // Функция для получения деталей заказа
-export async function getInvoiceDetails(invoiceId: string) {
+export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetails> {
   try {
     // Получаем основную информацию о заказе
     const invoice = await sql`
@@ -128,9 +144,9 @@ export async function getInvoiceDetails(invoiceId: string) {
 
     return {
       ...invoice[0],
-      products,
+      products: products as unknown as InvoiceDetails['products'],
       total_amount
-    };
+    } as InvoiceDetails;
   } catch (error) {
     console.error('Error getting invoice details:', error);
     throw error;

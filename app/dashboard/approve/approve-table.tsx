@@ -5,9 +5,25 @@ import { updateInvoiceStatus, getInvoiceDetails } from '@/app/lib/actions';
 import { useState } from 'react';
 import InvoiceDetailsModal from '@/app/ui/invoices/invoice-details-modal';
 
+type InvoiceDetails = {
+  id: string;
+  created_at: string;
+  provider_name: string;
+  status: string;
+  payment_status: string;
+  products: {
+    id: string;
+    name: string;
+    article: string;
+    price: number;
+    count: number;
+  }[];
+  total_amount: number;
+};
+
 export default function ApproveTable({ invoices }: { invoices: InvoicesTable[] }) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleStatusChange = async (id: string, status: OrderStatus) => {
