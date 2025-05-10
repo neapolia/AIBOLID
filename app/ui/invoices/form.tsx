@@ -22,6 +22,12 @@ type StorageItem = {
   count: number;
 };
 
+type MaterialOption = {
+  value: string;
+  label: string;
+  data?: StorageItem;
+};
+
 export default function Form({
   providerId,
   providers,
@@ -81,7 +87,7 @@ export default function Form({
     setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
   };
 
-  const handleMaterialChange = (option: any) => {
+  const handleMaterialChange = (option: MaterialOption | null) => {
     if (option === null) {
       setSelectedMaterial(null);
       setIsCustomMaterial(false);
@@ -91,9 +97,9 @@ export default function Form({
       setSelectedMaterial(null);
       onMaterialSelect?.(null);
     } else {
-      setSelectedMaterial(option.data);
+      setSelectedMaterial(option.data!);
       setIsCustomMaterial(false);
-      onMaterialSelect?.(option.data);
+      onMaterialSelect?.(option.data!);
     }
   };
 
