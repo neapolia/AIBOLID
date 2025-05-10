@@ -139,9 +139,9 @@ export async function fetchFilteredProviders(query: string) {
       site
 		FROM polina_providers
 		WHERE
-		  name ILIKE ${`%${query}%`} OR
+		  ${query ? sql`name ILIKE ${`%${query}%`} OR
       site ILIKE ${`%${query}%`} OR
-      phone ILIKE ${`%${query}%`}
+      phone ILIKE ${`%${query}%`}` : sql`TRUE`}
 		ORDER BY name ASC
 	  `;
 
