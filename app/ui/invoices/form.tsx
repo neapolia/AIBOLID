@@ -1,144 +1,138 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createInvoice } from '@/app/lib/actions';
-import Button from '@/app/ui/button';
-import { Input } from '@/app/ui/input';
-import { FormattedProviders, Product } from '@/app/lib/definitions';
+import React, { ChangeEvent, useEffect, useState } from "react";
+import Select from "react-select";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FormattedProviders, Product } from "@/app/lib/definitions";
+import { formatCurrency } from "@/app/lib/utils";
+import Button from "../button";
 
-type FormProps = {
-  providerId: string | null;
-  providers: Omit<FormattedProviders, "inn" | "phone" | "site">[];
-  products: Product[] | null;
-  onSubmit: (products: Record<string, number>) => void;
-  isSubmitting?: boolean;
-  onMaterialSelect?: (material: { id?: string; name: string; price: number } | null) => void;
+type ProviderOption = {
+  value: string;
+  label: string;
 };
 
-export default function Form({ providerId, providers, products, onSubmit, isSubmitting, onMaterialSelect }: FormProps) {
-  const router = useRouter();
-  const [providerName, setProviderName] = useState('');
-  const [items, setItems] = useState([{ name: '', count: 1, price: 0 }]);
-  const [isLoading, setIsLoading] = useState(false);
+export default function Form({
+  providerId,
+  providers,
+  products,
+  onSubmit,
+  isSubmitting,
+}: {
+  products: Product[] | null;
+  providerId: string | null;
+  providers: Omit<FormattedProviders, "inn" | "phone" | "site">[];
+  onSubmit: (products: Record<string, number>) => void;
+  isSubmitting?: boolean;
+}) {
+  const [state, setState] = useState<Record<string, number>>({});
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { replace } = useRouter();
 
-  const addItem = () => {
-    setItems([...items, { name: '', count: 1, price: 0 }]);
-  };
+  useEffect(() => {
+    setState({});
+  }, [providerId]);
 
-  const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
+  const params = new URLSearchParams(searchParams.toString());
 
-  const updateItem = (index: number, field: string, value: string | number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
+  const providerOptions = providers.map((p) => ({
+    value: p.id,
+    label: p.name,
+  }));
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const selectedProvider = providerId ? providerOptions.find((o) => o.value === providerId) : null;
 
-    try {
-      const products = items.reduce((acc, item) => ({
-        ...acc,
-        [item.name]: item.count
-      }), {});
-
-      await createInvoice({
-        providerId: providerName,
-        products,
-        material: {
-          name: items[0].name,
-          price: items[0].price
-        }
-      });
-
-      router.push('/dashboard/invoices');
-      router.refresh();
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      alert('Ошибка при создании заказа');
-    } finally {
-      setIsLoading(false);
+  const handleProviderChange = (option: ProviderOption | null) => {
+    if (option) {
+      params.set("providerId", option.value);
+      replace(`${pathname}?${params.toString()}`);
+    } else {
+      params.delete("providerId");
+      replace(`${pathname}?${params.toString()}`);
     }
   };
 
+  const onCountChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setState((prev) => ({ ...prev, [e.target.name]: Number(e.target.value) }));
+  };
+
+  const isShowSubmitButton =
+    Object.values(state).length &&
+    Object.values(state)?.reduce((acc, v) => acc + v) >= 1;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(state);
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+    }, 3000);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="provider" className="block text-sm font-medium text-gray-700">
-          Поставщик
-        </label>
-        <Input
-          id="provider"
-          value={providerName}
-          onChange={(e) => setProviderName(e.target.value)}
-          placeholder="Введите название поставщика"
-          required
+    <section className="w-full pt-6 pb-24">
+      <h1 className="text-2xl">Создать новый заказ</h1>
+      
+      {showSuccessMessage && (
+        <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          Заказ успешно отправлен поставщику
+        </div>
+      )}
+
+      <div className="border-b border-gray-200 py-6">
+        <span className="block font-medium text-gray-900 mb-2">
+          Выберите поставщика
+        </span>
+
+        <Select
+          placeholder="Выберите поставщика"
+          value={selectedProvider}
+          isClearable
+          onChange={handleProviderChange}
+          options={providerOptions}
+          isSearchable={false}
+          className="basic-single"
+          classNamePrefix="select"
         />
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">Товары</h3>
-          <Button type="button" onClick={addItem} variant="outline">
-            Добавить товар
-          </Button>
-        </div>
-
-        {items.map((item, index) => (
-          <div key={index} className="grid grid-cols-4 gap-4 p-4 border rounded-lg">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Название</label>
-              <Input
-                value={item.name}
-                onChange={(e) => updateItem(index, 'name', e.target.value)}
-                placeholder="Название товара"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Количество</label>
-              <Input
-                type="number"
-                min="1"
-                value={item.count}
-                onChange={(e) => updateItem(index, 'count', parseInt(e.target.value) || 0)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Цена</label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={item.price}
-                onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                required
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={() => removeItem(index)}
-                variant="outline"
-                className="text-red-600 border-red-600 hover:bg-red-50"
-              >
-                Удалить
-              </Button>
-            </div>
+      <div className="flex flex-col gap-5 my-10">
+        {products?.map((p) => (
+          <div
+            className="flex flex-col justify-between p-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            key={p.id}
+          >
+            <div>Название товара: {p.name}</div>
+            <div>Цена за 1ед товара {formatCurrency(p.price)}</div>
+            <input
+              className="text-black rounded mt-3"
+              name={p.id}
+              id={p.id}
+              type="number"
+              defaultValue={0}
+              step={5}
+              onChange={onCountChange}
+            />
           </div>
         ))}
       </div>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Создание...' : 'Создать заказ'}
-        </Button>
+      <div className="flex justify-end gap-1">
+        {isShowSubmitButton ? (
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Отправка...' : 'Оформить заказ'}
+          </Button>
+        ) : null}
+        <Link
+          href="/invoices"
+          className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
+        >
+          Отменить
+        </Link>
       </div>
-    </form>
+    </section>
   );
 }

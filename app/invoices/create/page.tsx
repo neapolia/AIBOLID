@@ -87,7 +87,6 @@ function CreateInvoiceContent() {
           products={products}
           onSubmit={handleCreateInvoice}
           isSubmitting={isSubmitting}
-          onMaterialSelect={setSelectedMaterial}
         />
       )}
     </div>

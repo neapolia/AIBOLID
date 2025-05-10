@@ -145,7 +145,7 @@ type InvoiceDetails = {
 };
 
 // Функция для получения деталей заказа
-export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetails> {
+export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
   try {
     const invoice = await sql`
       SELECT 
@@ -154,29 +154,27 @@ export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetai
         i.status,
         i.payment_status,
         p.name as provider_name,
-        COALESCE(SUM(ip.count * pr.price), 0) as total_amount
+        i.total_amount
       FROM polina_invoices i
       LEFT JOIN polina_providers p ON i.provider_id = p.id
-      LEFT JOIN polina_invoices_products ip ON i.id = ip.invoice_id
-      LEFT JOIN polina_products pr ON ip.product_id = pr.id
-      WHERE i.id = ${invoiceId}
-      GROUP BY i.id, i.created_at, i.status, i.payment_status, p.name
+      WHERE i.id = ${id}
     `;
 
-    if (!invoice || invoice.length === 0) {
+    if (!invoice[0]) {
       throw new Error('Invoice not found');
     }
 
     const items = await sql`
       SELECT 
-        p.id,
+        pi.id,
+        pi.product_id,
         p.name,
         p.article,
-        p.price,
-        ip.count
-      FROM polina_invoices_products ip
-      JOIN polina_products p ON ip.product_id = p.id
-      WHERE ip.invoice_id = ${invoiceId}
+        pi.count,
+        p.price
+      FROM polina_invoice_items pi
+      LEFT JOIN polina_products p ON pi.product_id = p.id
+      WHERE pi.invoice_id = ${id}
     `;
 
     return {
@@ -186,16 +184,37 @@ export async function getInvoiceDetails(invoiceId: string): Promise<InvoiceDetai
       payment_status: invoice[0].payment_status,
       provider_name: invoice[0].provider_name,
       total_amount: Number(invoice[0].total_amount),
+      products: items.map(item => ({
+        id: String(item.id),
+        name: String(item.name),
+        article: String(item.article),
+        count: Number(item.count),
+        price: Number(item.price)
+      })),
       items: items.map(item => ({
-        id: item.id,
-        name: item.name,
-        article: item.article,
-        price: Number(item.price),
-        count: Number(item.count)
+        id: String(item.id),
+        name: String(item.name),
+        article: String(item.article),
+        count: Number(item.count),
+        price: Number(item.price)
       }))
-    } as InvoiceDetails;
+    };
   } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoice details.');
+    console.error('Error fetching invoice details:', error);
+    throw error;
+  }
+}
+
+export async function updateStorageCount(id: string, amount: number) {
+  try {
+    await sql`
+      UPDATE polina_storage
+      SET count = count + ${amount}
+      WHERE id = ${id}
+    `;
+    revalidatePath('/storage');
+  } catch (error) {
+    console.error('Error updating storage count:', error);
+    throw error;
   }
 }

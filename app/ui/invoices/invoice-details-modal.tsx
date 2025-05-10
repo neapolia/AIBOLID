@@ -1,130 +1,73 @@
 'use client';
 
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
-import { formatCurrency } from '@/app/lib/utils';
-import type { InvoiceDetails } from '@/app/lib/definitions';
+import { InvoiceDetails } from "@/app/lib/definitions";
+import { formatCurrency } from "@/app/lib/utils";
 
-export default function InvoiceDetailsModal({
-  isOpen,
-  onClose,
-  invoice,
-}: {
-  isOpen: boolean;
+interface InvoiceDetailsModalProps {
+  invoice: InvoiceDetails | null;
   onClose: () => void;
-  invoice: InvoiceDetails;
-}) {
+  isOpen: boolean;
+}
+
+export default function InvoiceDetailsModal({ invoice, onClose, isOpen }: InvoiceDetailsModalProps) {
+  if (!invoice || !isOpen) return null;
+
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
-        </Transition.Child>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Детали заказа #{invoice.id}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900"
-                >
-                  Детали заказа #{invoice.id}
-                </Dialog.Title>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Дата создания</p>
+              <p className="font-medium">{new Date(invoice.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Статус</p>
+              <p className="font-medium">{invoice.status}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Статус оплаты</p>
+              <p className="font-medium">{invoice.payment_status}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Поставщик</p>
+              <p className="font-medium">{invoice.provider_name}</p>
+            </div>
+          </div>
 
-                <div className="mt-4">
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Поставщик</p>
-                      <p className="mt-1">{invoice.provider_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Дата</p>
-                      <p className="mt-1">{new Date(invoice.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Статус</p>
-                      <p className="mt-1">{invoice.status}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Общая сумма</p>
-                      <p className="mt-1">{formatCurrency(invoice.total_amount)}</p>
-                    </div>
+          <div className="border-t pt-4">
+            <h3 className="font-medium mb-2">Товары</h3>
+            <div className="space-y-2">
+              {invoice.items.map((item) => (
+                <div key={item.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div>
+                    <p className="font-medium">{item.name}</p>
+                    <p className="text-sm text-gray-600">Количество: {item.count}</p>
                   </div>
-
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">Товары</h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Товар
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Количество
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Цена
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Сумма
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {invoice.items.map((item) => (
-                            <tr key={item.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {item.name}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {item.count}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {formatCurrency(item.price)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {formatCurrency(item.price * item.count)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <p className="font-medium">{formatCurrency(item.price)}</p>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div className="mt-6">
-                  <button
-                    type="button"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    onClick={onClose}
-                  >
-                    Закрыть
-                  </button>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
+          <div className="border-t pt-4">
+            <div className="flex justify-between items-center">
+              <p className="font-medium">Итого:</p>
+              <p className="text-xl font-bold">{formatCurrency(invoice.total_amount)}</p>
+            </div>
           </div>
         </div>
-      </Dialog>
-    </Transition>
+      </div>
+    </div>
   );
 }
