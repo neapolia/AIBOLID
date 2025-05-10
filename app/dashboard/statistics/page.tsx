@@ -21,9 +21,9 @@ export default async function StatisticsPage() {
 
   // Статистика по накладным
   const totalInvoices = invoices.length;
-  const deliveredInvoices = invoices.filter(i => i.status === 'delivered').length;
+  const deliveredInvoices = invoices.filter(i => i.status === 'closed').length;
   const paidInvoices = invoices.filter(i => i.payment_status === 'paid').length;
-  const inProgressInvoices = invoices.filter(i => i.status === 'created' || i.status === 'approved').length;
+  const inProgressInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'accepted').length;
 
   return (
     <StatisticsClient
