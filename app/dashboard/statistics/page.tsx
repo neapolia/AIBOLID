@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import StatisticsClient from './StatisticsClient';
 import {
   getMonthlyExpenses,
