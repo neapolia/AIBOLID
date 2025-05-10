@@ -65,8 +65,8 @@ export async function GET() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         delivery_date TIMESTAMP WITH TIME ZONE,
         docs_url VARCHAR(255),
-        status BOOLEAN DEFAULT false,
-        payment_status BOOLEAN DEFAULT false,
+        status VARCHAR(50) DEFAULT 'pending',
+        payment_status VARCHAR(50) DEFAULT 'pending',
         provider_id UUID REFERENCES polina_providers(id)
       );
     `;
