@@ -1,25 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sql } from '@vercel/postgres';
+import postgres from "postgres";
 import { OrderStatus, PaymentStatus } from "./definitions";
 import { updateStorageFromInvoice } from "./storage-actions";
 
-type CreateInvoiceParams = {
-  providerId: string;
-  products: Record<string, number>;
-  material?: {
-    id?: string;
-    name: string;
-    price: number;
-  } | null;
-};
-
-type CreateInvoiceResult = {
-  success: boolean;
-  invoiceId?: string;
-  error?: string;
-};
+const sql = postgres(process.env.POSTGRES_URL!);
 
 type InvoiceItem = {
   id: string;
@@ -50,85 +36,30 @@ type QueryResultRow = {
   [key: string]: unknown;
 };
 
-export async function createInvoice({ providerId, products, material }: CreateInvoiceParams): Promise<CreateInvoiceResult> {
-  if (!providerId) {
-    return { success: false, error: 'Provider ID is required' };
-  }
-
-  if (!products || Object.keys(products).length === 0) {
-    return { success: false, error: 'Products are required' };
-  }
-
+export async function createInvoice(
+  providerId: string,
+  products: Record<string, number>
+) {
   try {
-    console.log('Creating invoice with params:', { providerId, products, material });
+    const response = await sql`
+        INSERT INTO polina_invoices (created_at, delivery_date, provider_id, docs_url, status, payment_status)
+        VALUES (${new Date().toISOString()}, ${null}, ${providerId}, ${null}, ${false}, ${false})
+        RETURNING id;
+      `;
 
-    // Проверяем, нет ли уже такого заказа
-    const existingInvoice = await sql`
-      SELECT id FROM polina_invoices 
-      WHERE provider_id = ${providerId} 
-      AND status = 'pending'
-      AND created_at > NOW() - INTERVAL '5 minutes'
-    `;
-
-    if (existingInvoice.rows.length > 0) {
-      console.log('Found existing invoice:', existingInvoice.rows);
-      return { success: false, error: 'Заказ уже создан' };
-    }
-
-    // Создаем заказ
-    const result = await sql`
-      INSERT INTO polina_invoices (
-        provider_id,
-        status,
-        payment_status,
-        material_name,
-        material_price,
-        is_auto_order,
-        created_at
-      ) VALUES (
-        ${providerId},
-        'pending',
-        'pending',
-        ${material?.name || null},
-        ${material?.price || null},
-        false,
-        ${new Date().toISOString()}
-      )
-      RETURNING id;
-    `;
-
-    console.log('Created invoice with result:', result.rows);
-
-    if (!result.rows[0]) {
-      throw new Error('Failed to create invoice - no ID returned');
-    }
-
-    const invoiceId = result.rows[0].id;
-
-    // Добавляем продукты
-    for (const [productId, count] of Object.entries(products)) {
-      if (count > 0) {
-        console.log('Adding product to invoice:', { productId, count });
+    await Promise.all(
+      Object.keys(products).map(async (productId) => {
         await sql`
-          INSERT INTO polina_invoices_products (
-            invoice_id,
-            product_id,
-            count
-          ) VALUES (
-            ${invoiceId},
-            ${productId},
-            ${count}
-          );
-        `;
-      }
-    }
-
-    revalidatePath("/dashboard/approve");
-    return { success: true, invoiceId };
-  } catch (error) {
-    console.error('Error creating invoice:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to create invoice' };
+            INSERT INTO polina_invoices_products (product_id, invoice_id, count)
+            VALUES (${productId}, ${response[0].id}, ${products[productId]})
+          `;
+      })
+    );
+  } catch (err) {
+    console.error(err);
+    throw new Error("Failed to Update Checklist step");
   }
+  revalidatePath("/invoices");
 }
 
 export async function updateInvoiceStatus(
@@ -203,7 +134,7 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
       GROUP BY i.id, i.created_at, i.status, i.payment_status, p.name
     `;
 
-    if (!invoice.rows[0]) {
+    if (!invoice[0]) {
       throw new Error('Invoice not found');
     }
 
@@ -221,20 +152,20 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
     `;
 
     return {
-      id: String(invoice.rows[0].id),
-      created_at: String(invoice.rows[0].created_at),
-      status: String(invoice.rows[0].status),
-      payment_status: String(invoice.rows[0].payment_status),
-      provider_name: String(invoice.rows[0].provider_name),
-      total_amount: Number(invoice.rows[0].total_amount),
-      items: items.rows.map((item: QueryResultRow) => ({
+      id: String(invoice[0].id),
+      created_at: String(invoice[0].created_at),
+      status: String(invoice[0].status),
+      payment_status: String(invoice[0].payment_status),
+      provider_name: String(invoice[0].provider_name),
+      total_amount: Number(invoice[0].total_amount),
+      items: items.map((item: QueryResultRow) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),
         count: Number(item.count),
         price: Number(item.price)
       })),
-      products: items.rows.map((item: QueryResultRow) => ({
+      products: items.map((item: QueryResultRow) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),
