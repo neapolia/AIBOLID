@@ -209,13 +209,17 @@ export async function fetchFilteredStorage(query: string) {
 
 export async function fetchProviders() {
   try {
+    console.log('Fetching providers...');
     const providers = await sql`
       SELECT id, name FROM polina_providers ORDER BY name
     `;
-    return (Array.isArray(providers) ? providers : []).map((p: Row) => ({
+    console.log('Raw providers data:', providers);
+    const formattedProviders = (Array.isArray(providers) ? providers : []).map((p: Row) => ({
       id: String(p.id),
       name: String(p.name),
     }));
+    console.log('Formatted providers:', formattedProviders);
+    return formattedProviders;
   } catch (error) {
     console.error("DB (fetchProviders):", error);
     return [];
@@ -238,5 +242,18 @@ export async function fetchProviderProducts(providerId: string) {
   } catch (error) {
     console.error("Database Error:", error);
     return [];
+  }
+}
+
+export async function checkProvidersTable() {
+  try {
+    const result = await sql`
+      SELECT COUNT(*) as count FROM polina_providers
+    `;
+    console.log('Providers count:', result[0].count);
+    return Number(result[0].count);
+  } catch (error) {
+    console.error("DB (checkProvidersTable):", error);
+    return 0;
   }
 }

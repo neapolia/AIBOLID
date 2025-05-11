@@ -1,7 +1,7 @@
 'use client';
 
 import { createInvoice } from "@/app/lib/actions";
-import { fetchProviders, fetchProviderProducts } from "@/app/lib/data";
+import { fetchProviders, fetchProviderProducts, checkProvidersTable } from "@/app/lib/data";
 import Form from "@/app/ui/invoices/form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
@@ -30,8 +30,11 @@ function CreateInvoiceContent() {
 
   useEffect(() => {
     const loadProviders = async () => {
-      console.log('Loading providers...');
+      console.log('Loading providers in component...');
+      const count = await checkProvidersTable();
+      console.log('Providers count in table:', count);
       const data = await fetchProviders();
+      console.log('Received providers data:', data);
       setProviders(data);
     };
     loadProviders();
