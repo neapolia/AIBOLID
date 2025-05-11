@@ -8,6 +8,9 @@ import {
   Product,
 } from "./definitions";
 
+// Инициализируем подключение к базе данных
+const db = sql;
+
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL is not defined in environment variables');
 }
@@ -264,10 +267,18 @@ export async function fetchFilteredStorage(query: string) {
 export async function fetchProviders() {
   try {
     console.log('Fetching providers...');
-    const result = await sql`
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    
+    const result = await db`
       SELECT id, name FROM polina_providers ORDER BY name
     `;
     console.log('Raw providers data:', result);
+    
+    if (!result.rows || result.rows.length === 0) {
+      console.log('No providers found in database');
+      return [];
+    }
+    
     const formattedProviders = result.rows.map((p: QueryResultRow) => ({
       id: String(p.id),
       name: String(p.name),
@@ -309,7 +320,7 @@ export async function checkProvidersTable() {
     if (!process.env.DATABASE_URL) {
       throw new Error('DATABASE_URL is not defined');
     }
-    const result = await sql`
+    const result = await db`
       SELECT COUNT(*) as count FROM polina_providers
     `;
     console.log('Providers count:', result.rows[0].count);
