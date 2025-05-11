@@ -146,8 +146,8 @@ export async function fetchInvoices() {
       created_at: row.created_at as string,
       delivery_date: row.delivery_date as string | null,
       docs_url: row.docs_url as string | null,
-      status: String(row.status),
-      payment_status: String(row.payment_status),
+      status: row.status as 'pending' | 'delivered' | 'closed',
+      payment_status: row.payment_status as 'pending' | 'paid',
       provider_name: String(row.provider_name),
       total_amount: Number(row.total_amount),
       products: row.products as Array<{
