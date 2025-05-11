@@ -278,3 +278,35 @@ export async function checkProvidersTable() {
     return 0;
   }
 }
+
+export async function checkDatabaseConnection() {
+  try {
+    console.log('Checking database connection...');
+    console.log('POSTGRES_URL:', process.env.POSTGRES_URL ? 'exists' : 'missing');
+    
+    // Проверяем структуру таблицы
+    const tableInfo = await sql`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'polina_providers'
+    `;
+    console.log('Table structure:', tableInfo);
+
+    // Проверяем наличие данных
+    const providers = await sql`
+      SELECT * FROM polina_providers
+    `;
+    console.log('All providers:', providers);
+
+    return {
+      tableStructure: tableInfo,
+      providers: providers
+    };
+  } catch (error) {
+    console.error("DB (checkDatabaseConnection):", error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
+    return null;
+  }
+}
