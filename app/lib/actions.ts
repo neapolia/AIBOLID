@@ -29,6 +29,27 @@ type InvoiceItem = {
   price: number;
 };
 
+type InvoiceRow = {
+  id: string;
+  created_at: string;
+  status: string;
+  payment_status: string;
+  provider_name: string;
+  total_amount: number;
+};
+
+type InvoiceProductRow = {
+  id: string;
+  name: string;
+  article: string;
+  count: number;
+  price: number;
+};
+
+type QueryResultRow = {
+  [key: string]: unknown;
+};
+
 export async function createInvoice({ providerId, products, material }: CreateInvoiceParams): Promise<CreateInvoiceResult> {
   if (!providerId) {
     return { success: false, error: 'Provider ID is required' };
@@ -200,20 +221,20 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
     `;
 
     return {
-      id: invoice.rows[0].id,
-      created_at: invoice.rows[0].created_at,
-      status: invoice.rows[0].status,
-      payment_status: invoice.rows[0].payment_status,
-      provider_name: invoice.rows[0].provider_name,
+      id: String(invoice.rows[0].id),
+      created_at: String(invoice.rows[0].created_at),
+      status: String(invoice.rows[0].status),
+      payment_status: String(invoice.rows[0].payment_status),
+      provider_name: String(invoice.rows[0].provider_name),
       total_amount: Number(invoice.rows[0].total_amount),
-      items: items.rows.map((item: any) => ({
+      items: items.rows.map((item: QueryResultRow) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),
         count: Number(item.count),
         price: Number(item.price)
       })),
-      products: items.rows.map((item: any) => ({
+      products: items.rows.map((item: QueryResultRow) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),

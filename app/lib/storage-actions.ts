@@ -29,6 +29,10 @@ type HistoryRow = {
   invoice_id: string | null;
 };
 
+type QueryResultRow = {
+  [key: string]: unknown;
+};
+
 // Функция для создания таблицы истории склада
 async function createStorageHistoryTable() {
   try {
@@ -192,15 +196,15 @@ export async function getStorageHistory(): Promise<StorageHistoryRecord[]> {
       ORDER BY sh.created_at DESC
     `;
 
-    return result.rows.map((row: any) => ({
-      id: row.id,
-      product_id: row.product_id,
+    return result.rows.map((row: QueryResultRow) => ({
+      id: String(row.id),
+      product_id: String(row.product_id),
       count: Number(row.count),
       operation: row.operation as 'add' | 'remove',
-      created_at: row.created_at,
-      product_name: row.product_name,
-      article: row.article,
-      invoice_id: row.invoice_id
+      created_at: row.created_at as string,
+      product_name: String(row.product_name),
+      article: String(row.article),
+      invoice_id: row.invoice_id ? String(row.invoice_id) : undefined
     }));
   } catch (error) {
     console.error('Error in getStorageHistory:', error);
@@ -229,14 +233,14 @@ export async function getProducts(): Promise<Product[]> {
     `;
     console.log('Products data:', products);
 
-    const result = products.rows.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      article: row.article,
+    const result = products.rows.map((row: QueryResultRow) => ({
+      id: String(row.id),
+      name: String(row.name),
+      article: String(row.article),
       price: Number(row.price),
       count: Number(row.count),
-      provider_id: row.provider_id,
-      provider_name: row.provider_name
+      provider_id: String(row.provider_id),
+      provider_name: String(row.provider_name)
     }));
 
     console.log('Final result:', result);
@@ -272,14 +276,14 @@ export async function fetchFilteredStorage(query: string): Promise<Product[]> {
       ORDER BY p.name ASC
     `;
 
-    return result.rows.map((row: any) => ({
-      id: row.id,
-      name: row.name,
-      article: row.article,
+    return result.rows.map((row: QueryResultRow) => ({
+      id: String(row.id),
+      name: String(row.name),
+      article: String(row.article),
       price: Number(row.price),
       count: Number(row.count),
-      provider_id: row.provider_id,
-      provider_name: row.provider_name
+      provider_id: String(row.provider_id),
+      provider_name: String(row.provider_name)
     }));
   } catch (error) {
     console.error('Error fetching filtered storage:', error);

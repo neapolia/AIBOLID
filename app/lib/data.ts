@@ -34,6 +34,10 @@ type InvoiceRow = {
   total_amount: number;
 };
 
+type QueryResultRow = {
+  [key: string]: unknown;
+};
+
 export async function fetchLatestInvoices() {
   try {
     const result = await sql`
@@ -53,12 +57,12 @@ export async function fetchLatestInvoices() {
       LIMIT 5
     `;
 
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row: QueryResultRow) => ({
       id: String(row.id),
       provider_name: String(row.provider_name),
-      created_at: row.created_at,
-      status: row.status,
-      payment_status: row.payment_status,
+      created_at: row.created_at as string,
+      status: row.status as string,
+      payment_status: row.payment_status as string,
       total_amount: Number(row.total_amount),
     }));
   } catch (error) {
@@ -252,7 +256,7 @@ export async function fetchProviders() {
       SELECT id, name FROM polina_providers ORDER BY name
     `;
     console.log('Raw providers data:', result);
-    const formattedProviders = result.rows.map((p: any) => ({
+    const formattedProviders = result.rows.map((p: QueryResultRow) => ({
       id: String(p.id),
       name: String(p.name),
     }));
@@ -275,7 +279,7 @@ export async function fetchProviderProducts(providerId: string) {
       WHERE provider_id = ${providerId}
       ORDER BY name
     `;
-    return result.rows.map((p: any) => ({
+    return result.rows.map((p: QueryResultRow) => ({
       id: String(p.id),
       name: String(p.name),
       article: String(p.article),
