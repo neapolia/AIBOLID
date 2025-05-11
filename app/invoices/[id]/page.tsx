@@ -2,16 +2,30 @@ export const dynamic = 'force-dynamic';
 import { Metadata } from "next";
 import { fetchInvoiceById } from "@/app/lib/data";
 import { formatCurrency } from "@/app/lib/utils";
+import { getInvoiceDetails } from "@/app/lib/actions";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Информация о заказе",
+};
+
+type Product = {
+  id: string;
+  name: string;
+  article: string;
+  price: number;
+  count: number;
 };
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const id = params.id;
 
-  const invoiceInfo = await fetchInvoiceById(id);
+  const invoiceInfo = await getInvoiceDetails(id);
+
+  if (!invoiceInfo) {
+    notFound();
+  }
 
   return (
     <div className="w-full">
@@ -21,14 +35,19 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       </span>
 
       <div className="flex flex-col gap-5 my-10">
-        {invoiceInfo.products.map((p) => (
+        {invoiceInfo.products.map((p: Product) => (
           <div
             className="flex flex-col justify-between p-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             key={p.name}
           >
-            <div>Название товара: {p.name}</div>
-            <div>Кол-во: {p.count} шт</div>
-            <div>Цена за 1ед товара {formatCurrency(p.price)}</div>
+            <div className="flex justify-between">
+              <span>{p.name}</span>
+              <span>{p.article}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{p.count} шт.</span>
+              <span>{p.price} ₽</span>
+            </div>
           </div>
         ))}
       </div>
