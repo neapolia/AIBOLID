@@ -1,10 +1,33 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import postgres from "postgres";
+import { sql } from '@vercel/postgres';
 import { StorageHistoryRecord, Product } from "./types";
 
-const sql = postgres(process.env.POSTGRES_URL!);
+type ProductRow = {
+  id: string;
+  name: string;
+  article: string;
+  price: number;
+  provider_id: string;
+  count: number;
+  provider_name?: string;
+};
+
+type StorageRow = {
+  count: number;
+};
+
+type HistoryRow = {
+  id: string;
+  product_id: string;
+  count: number;
+  operation: 'add' | 'remove';
+  created_at: string;
+  product_name: string;
+  article: string;
+  invoice_id: string | null;
+};
 
 // Функция для создания таблицы истории склада
 async function createStorageHistoryTable() {
@@ -66,7 +89,7 @@ async function checkMinStock(productId: string, currentCount: number) {
         SELECT name, provider_id FROM polina_products WHERE id = ${productId}
       `;
 
-      if (product.length > 0) {
+      if (product.rows.length > 0) {
         await sql`
           INSERT INTO polina_invoices (
             created_at,
@@ -80,7 +103,7 @@ async function checkMinStock(productId: string, currentCount: number) {
           VALUES (
             ${new Date().toISOString()},
             ${null},
-            ${product[0].provider_id},
+            ${product.rows[0].provider_id},
             ${null},
             'pending',
             'pending',
@@ -111,13 +134,13 @@ export async function updateStorageFromInvoice(invoiceId: string) {
       WHERE ip.invoice_id = ${invoiceId}
     `;
 
-    for (const product of invoiceProducts) {
+    for (const product of invoiceProducts.rows) {
       // Check if product exists in storage
       const existingStorage = await sql`
         SELECT count FROM polina_storage WHERE product_id = ${product.product_id}
       `;
 
-      if (existingStorage.length > 0) {
+      if (existingStorage.rows.length > 0) {
         // Update existing storage record
         await sql`
           UPDATE polina_storage
@@ -169,11 +192,11 @@ export async function getStorageHistory(): Promise<StorageHistoryRecord[]> {
       ORDER BY sh.created_at DESC
     `;
 
-    return result.map(row => ({
+    return result.rows.map((row: any) => ({
       id: row.id,
       product_id: row.product_id,
       count: Number(row.count),
-      operation: row.operation,
+      operation: row.operation as 'add' | 'remove',
       created_at: row.created_at,
       product_name: row.product_name,
       article: row.article,
@@ -206,7 +229,7 @@ export async function getProducts(): Promise<Product[]> {
     `;
     console.log('Products data:', products);
 
-    const result = products.map(row => ({
+    const result = products.rows.map((row: any) => ({
       id: row.id,
       name: row.name,
       article: row.article,
@@ -249,7 +272,7 @@ export async function fetchFilteredStorage(query: string): Promise<Product[]> {
       ORDER BY p.name ASC
     `;
 
-    return result.map(row => ({
+    return result.rows.map((row: any) => ({
       id: row.id,
       name: row.name,
       article: row.article,
@@ -271,7 +294,7 @@ export async function updateProductCount(productId: string, newCount: number) {
       SELECT id FROM polina_products WHERE id = ${productId}
     `;
     
-    if (product.length === 0) {
+    if (product.rows.length === 0) {
       throw new Error('Product not found');
     }
 
@@ -280,11 +303,11 @@ export async function updateProductCount(productId: string, newCount: number) {
       SELECT count FROM polina_storage WHERE product_id = ${productId}
     `;
     
-    const currentCount = currentStorage.length > 0 ? Number(currentStorage[0].count) : 0;
+    const currentCount = currentStorage.rows.length > 0 ? Number(currentStorage.rows[0].count) : 0;
     const difference = newCount - currentCount;
 
     // Обновляем или создаем запись в polina_storage
-    if (currentStorage.length > 0) {
+    if (currentStorage.rows.length > 0) {
       await sql`
         UPDATE polina_storage
         SET count = ${newCount}
@@ -325,24 +348,24 @@ export async function checkTables() {
     const historyCount = await sql`
       SELECT COUNT(*) as count FROM polina_storage_history
     `;
-    console.log('Storage history records count:', historyCount[0].count);
+    console.log('Storage history records count:', historyCount.rows[0].count);
 
     // Проверяем таблицу polina_products
     const productsCount = await sql`
       SELECT COUNT(*) as count FROM polina_products
     `;
-    console.log('Products count:', productsCount[0].count);
+    console.log('Products count:', productsCount.rows[0].count);
 
     // Проверяем таблицу polina_invoices
     const invoicesCount = await sql`
       SELECT COUNT(*) as count FROM polina_invoices
     `;
-    console.log('Invoices count:', invoicesCount[0].count);
+    console.log('Invoices count:', invoicesCount.rows[0].count);
 
     return {
-      historyCount: historyCount[0].count,
-      productsCount: productsCount[0].count,
-      invoicesCount: invoicesCount[0].count
+      historyCount: historyCount.rows[0].count,
+      productsCount: productsCount.rows[0].count,
+      invoicesCount: invoicesCount.rows[0].count
     };
   } catch (error) {
     console.error('Error checking tables:', error);

@@ -1,11 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import postgres from "postgres";
+import { sql } from '@vercel/postgres';
 import { OrderStatus, PaymentStatus } from "./definitions";
 import { updateStorageFromInvoice } from "./storage-actions";
-
-const sql = postgres(process.env.POSTGRES_URL!);
 
 type CreateInvoiceParams = {
   providerId: string;
@@ -21,6 +19,14 @@ type CreateInvoiceResult = {
   success: boolean;
   invoiceId?: string;
   error?: string;
+};
+
+type InvoiceItem = {
+  id: string;
+  name: string;
+  article: string;
+  count: number;
+  price: number;
 };
 
 export async function createInvoice({ providerId, products, material }: CreateInvoiceParams): Promise<CreateInvoiceResult> {
@@ -43,8 +49,8 @@ export async function createInvoice({ providerId, products, material }: CreateIn
       AND created_at > NOW() - INTERVAL '5 minutes'
     `;
 
-    if (existingInvoice && existingInvoice.length > 0) {
-      console.log('Found existing invoice:', existingInvoice);
+    if (existingInvoice.rows.length > 0) {
+      console.log('Found existing invoice:', existingInvoice.rows);
       return { success: false, error: 'Заказ уже создан' };
     }
 
@@ -70,13 +76,13 @@ export async function createInvoice({ providerId, products, material }: CreateIn
       RETURNING id;
     `;
 
-    console.log('Created invoice with result:', result);
+    console.log('Created invoice with result:', result.rows);
 
-    if (!result || result.length === 0) {
+    if (!result.rows[0]) {
       throw new Error('Failed to create invoice - no ID returned');
     }
 
-    const invoiceId = result[0].id;
+    const invoiceId = result.rows[0].id;
 
     // Добавляем продукты
     for (const [productId, count] of Object.entries(products)) {
@@ -176,7 +182,7 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
       GROUP BY i.id, i.created_at, i.status, i.payment_status, p.name
     `;
 
-    if (!invoice[0]) {
+    if (!invoice.rows[0]) {
       throw new Error('Invoice not found');
     }
 
@@ -194,20 +200,20 @@ export async function getInvoiceDetails(id: string): Promise<InvoiceDetails> {
     `;
 
     return {
-      id: invoice[0].id,
-      created_at: invoice[0].created_at,
-      status: invoice[0].status,
-      payment_status: invoice[0].payment_status,
-      provider_name: invoice[0].provider_name,
-      total_amount: Number(invoice[0].total_amount),
-      items: items.map(item => ({
+      id: invoice.rows[0].id,
+      created_at: invoice.rows[0].created_at,
+      status: invoice.rows[0].status,
+      payment_status: invoice.rows[0].payment_status,
+      provider_name: invoice.rows[0].provider_name,
+      total_amount: Number(invoice.rows[0].total_amount),
+      items: items.rows.map((item: any) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),
         count: Number(item.count),
         price: Number(item.price)
       })),
-      products: items.map(item => ({
+      products: items.rows.map((item: any) => ({
         id: String(item.id),
         name: String(item.name),
         article: String(item.article),

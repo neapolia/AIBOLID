@@ -1,4 +1,4 @@
-import postgres, { Row } from "postgres";
+import { sql } from '@vercel/postgres';
 import {
   FormattedProviders,
   FormattedStorage,
@@ -11,13 +11,6 @@ import {
 if (!process.env.POSTGRES_URL) {
   console.error('POSTGRES_URL is not defined in environment variables');
 }
-
-const sql = postgres(process.env.POSTGRES_URL!, {
-  ssl: 'require',
-  max: 1,
-  idle_timeout: 20,
-  connect_timeout: 10,
-});
 
 type ProviderRow = {
   id: string | number;
@@ -32,9 +25,18 @@ type ProductRow = {
   article: string;
 };
 
+type InvoiceRow = {
+  id: string;
+  provider_name: string;
+  created_at: string;
+  status: string;
+  payment_status: string;
+  total_amount: number;
+};
+
 export async function fetchLatestInvoices() {
   try {
-    const data = await sql<LatestInvoice[]>`
+    const result = await sql`
       SELECT 
         i.id,
         pp.name as provider_name,
@@ -48,9 +50,17 @@ export async function fetchLatestInvoices() {
       JOIN polina_providers pp ON p.provider_id = pp.id
       GROUP BY i.id, pp.name, i.created_at, i.status, i.payment_status
       ORDER BY i.created_at DESC
-      LIMIT 5`;
+      LIMIT 5
+    `;
 
-    return data;
+    return result.rows.map((row: any) => ({
+      id: String(row.id),
+      provider_name: String(row.provider_name),
+      created_at: row.created_at,
+      status: row.status,
+      payment_status: row.payment_status,
+      total_amount: Number(row.total_amount),
+    }));
   } catch (error) {
     console.error("Database Error:", error);
     return [];
@@ -67,16 +77,16 @@ export async function fetchCardData() {
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS "pending"
       FROM polina_invoices`;
 
-    const data = await Promise.all([
+    const [invoiceCount, providerCount, invoiceStatus] = await Promise.all([
       invoiceCountPromise,
       providerCountPromise,
       invoiceStatusPromise,
     ]);
 
-    const numberOfInvoices = Number(data[0][0].count ?? "0");
-    const numberOfProviders = Number(data[1][0].count ?? "0");
-    const closedInvoices = Number(data[2][0].closed ?? "0");
-    const pendingInvoices = Number(data[2][0].pending ?? "0");
+    const numberOfInvoices = Number(invoiceCount.rows[0].count ?? "0");
+    const numberOfProviders = Number(providerCount.rows[0].count ?? "0");
+    const closedInvoices = Number(invoiceStatus.rows[0].closed ?? "0");
+    const pendingInvoices = Number(invoiceStatus.rows[0].pending ?? "0");
 
     return {
       numberOfProviders,
@@ -97,7 +107,7 @@ export async function fetchCardData() {
 
 export async function fetchInvoices() {
   try {
-    const invoices = await sql<InvoicesTable[]>`
+    const result = await sql`
       SELECT
         i.id,
         i.created_at,
@@ -127,7 +137,17 @@ export async function fetchInvoices() {
       ORDER BY i.created_at DESC
     `;
 
-    return invoices;
+    return result.rows.map((row: any) => ({
+      id: String(row.id),
+      created_at: row.created_at,
+      delivery_date: row.delivery_date,
+      docs_url: row.docs_url,
+      status: row.status,
+      payment_status: row.payment_status,
+      provider_name: String(row.provider_name),
+      total_amount: Number(row.total_amount),
+      products: row.products,
+    }));
   } catch (error) {
     console.error("DB (fetchInvoices):", error);
     throw new Error("Failed to fetch invoices");
@@ -136,7 +156,7 @@ export async function fetchInvoices() {
 
 export async function fetchInvoiceById(id: string) {
   try {
-    const invoice = await sql<InvoiceInfo[]>`
+    const result = await sql`
       SELECT
         i.id,
         i.created_at,
@@ -158,7 +178,16 @@ export async function fetchInvoiceById(id: string) {
       GROUP BY i.id, i.created_at;
     `;
 
-    return invoice[0];
+    if (!result.rows[0]) {
+      throw new Error('Invoice not found');
+    }
+
+    return {
+      id: String(result.rows[0].id),
+      created_at: result.rows[0].created_at,
+      products: result.rows[0].products,
+      total_amount: Number(result.rows[0].total_amount),
+    };
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch invoice.");
@@ -167,22 +196,22 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchFilteredProviders(query: string) {
   try {
-    const data = await sql<FormattedProviders[]>`
-		SELECT
-		  id,
-		  name,
-		  inn,
-		  phone,
-      site
-		FROM polina_providers
-		WHERE
-		  ${query ? sql`name ILIKE ${`%${query}%`} OR
-      site ILIKE ${`%${query}%`} OR
-      phone ILIKE ${`%${query}%`}` : sql`TRUE`}
-		ORDER BY name ASC
-	  `;
+    const data = await sql`
+      SELECT
+        id,
+        name,
+        inn,
+        phone,
+        site
+      FROM polina_providers
+      WHERE
+        name ILIKE ${`%${query}%`} OR
+        site ILIKE ${`%${query}%`} OR
+        phone ILIKE ${`%${query}%`}
+      ORDER BY name ASC
+    `;
 
-    return data;
+    return data.rows;
   } catch (err) {
     console.error("Database Error:", err);
     return [];
@@ -191,25 +220,25 @@ export async function fetchFilteredProviders(query: string) {
 
 export async function fetchFilteredStorage(query: string) {
   try {
-    const data = await sql<FormattedStorage[]>`
-		SELECT
-		  storage.id,
-		  storage.product_id,
-		  storage.count,
-      products.article,
-      products.price,
-      products.name,
-      products.id AS product_id,
-      providers.name AS provider_name
-		FROM polina_storage as storage
-    LEFT JOIN polina_products as products ON products.id = storage.product_id
-    LEFT JOIN polina_providers as providers ON providers.id = products.provider_id
-		WHERE
-      products.name ILIKE ${`%${query}%`}
-		ORDER BY products.name ASC
-	  `;
+    const data = await sql`
+      SELECT
+        storage.id,
+        storage.product_id,
+        storage.count,
+        products.article,
+        products.price,
+        products.name,
+        products.id AS product_id,
+        providers.name AS provider_name
+      FROM polina_storage as storage
+      LEFT JOIN polina_products as products ON products.id = storage.product_id
+      LEFT JOIN polina_providers as providers ON providers.id = products.provider_id
+      WHERE
+        products.name ILIKE ${`%${query}%`}
+      ORDER BY products.name ASC
+    `;
 
-    return data;
+    return data.rows;
   } catch (error) {
     console.error("DB (fetchFilteredStorage):", error);
     return [];
@@ -218,15 +247,12 @@ export async function fetchFilteredStorage(query: string) {
 
 export async function fetchProviders() {
   try {
-    if (!process.env.POSTGRES_URL) {
-      throw new Error('POSTGRES_URL is not defined');
-    }
     console.log('Fetching providers...');
-    const providers = await sql`
+    const result = await sql`
       SELECT id, name FROM polina_providers ORDER BY name
     `;
-    console.log('Raw providers data:', providers);
-    const formattedProviders = (Array.isArray(providers) ? providers : []).map((p: Row) => ({
+    console.log('Raw providers data:', result);
+    const formattedProviders = result.rows.map((p: any) => ({
       id: String(p.id),
       name: String(p.name),
     }));
@@ -243,19 +269,21 @@ export async function fetchProviders() {
 
 export async function fetchProviderProducts(providerId: string) {
   try {
-    const products = await sql`
-      SELECT * FROM polina_products
+    const result = await sql`
+      SELECT id, name, article, price
+      FROM polina_products
       WHERE provider_id = ${providerId}
+      ORDER BY name
     `;
-    return (Array.isArray(products) ? products : []).map((p: Row) => ({
+    return result.rows.map((p: any) => ({
       id: String(p.id),
       name: String(p.name),
-      provider_id: String(p.provider_id),
-      price: Number(p.price),
       article: String(p.article),
+      price: Number(p.price),
+      provider_id: providerId,
     }));
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("DB (fetchProviderProducts):", error);
     return [];
   }
 }
@@ -268,8 +296,8 @@ export async function checkProvidersTable() {
     const result = await sql`
       SELECT COUNT(*) as count FROM polina_providers
     `;
-    console.log('Providers count:', result[0].count);
-    return Number(result[0].count);
+    console.log('Providers count:', result.rows[0].count);
+    return Number(result.rows[0].count);
   } catch (error) {
     console.error("DB (checkProvidersTable):", error);
     if (error instanceof Error) {
@@ -290,17 +318,17 @@ export async function checkDatabaseConnection() {
       FROM information_schema.columns 
       WHERE table_name = 'polina_providers'
     `;
-    console.log('Table structure:', tableInfo);
+    console.log('Table structure:', tableInfo.rows);
 
     // Проверяем наличие данных
     const providers = await sql`
       SELECT * FROM polina_providers
     `;
-    console.log('All providers:', providers);
+    console.log('All providers:', providers.rows);
 
     return {
-      tableStructure: tableInfo,
-      providers: providers
+      tableStructure: tableInfo.rows,
+      providers: providers.rows
     };
   } catch (error) {
     console.error("DB (checkDatabaseConnection):", error);
