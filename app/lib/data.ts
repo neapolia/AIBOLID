@@ -141,16 +141,22 @@ export async function fetchInvoices() {
       ORDER BY i.created_at DESC
     `;
 
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row: QueryResultRow) => ({
       id: String(row.id),
-      created_at: row.created_at,
-      delivery_date: row.delivery_date,
-      docs_url: row.docs_url,
-      status: row.status,
-      payment_status: row.payment_status,
+      created_at: row.created_at as string,
+      delivery_date: row.delivery_date as string | null,
+      docs_url: row.docs_url as string | null,
+      status: String(row.status),
+      payment_status: String(row.payment_status),
       provider_name: String(row.provider_name),
       total_amount: Number(row.total_amount),
-      products: row.products,
+      products: row.products as Array<{
+        id: string;
+        name: string;
+        article: string;
+        price: number;
+        count: number;
+      }>,
     }));
   } catch (error) {
     console.error("DB (fetchInvoices):", error);
