@@ -221,7 +221,13 @@ export async function fetchFilteredProviders(query: string) {
       ORDER BY name ASC
     `;
 
-    return data.rows;
+    return data.rows.map((row: QueryResultRow) => ({
+      id: String(row.id),
+      name: String(row.name),
+      inn: String(row.inn),
+      phone: String(row.phone),
+      site: String(row.site)
+    }));
   } catch (err) {
     console.error("Database Error:", err);
     return [];
