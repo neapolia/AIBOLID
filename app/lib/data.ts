@@ -11,8 +11,8 @@ import {
 // Инициализируем подключение к базе данных
 const db = sql;
 
-if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL is not defined in environment variables');
+if (!process.env.POSTGRES_URL) {
+  console.error('POSTGRES_URL is not defined in environment variables');
 }
 
 type ProviderRow = {
@@ -267,7 +267,7 @@ export async function fetchFilteredStorage(query: string) {
 export async function fetchProviders() {
   try {
     console.log('Fetching providers...');
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('POSTGRES_URL exists:', !!process.env.POSTGRES_URL);
     
     const result = await db`
       SELECT id, name FROM polina_providers ORDER BY name
@@ -317,8 +317,8 @@ export async function fetchProviderProducts(providerId: string) {
 
 export async function checkProvidersTable() {
   try {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL is not defined');
+    if (!process.env.POSTGRES_URL) {
+      throw new Error('POSTGRES_URL is not defined');
     }
     const result = await db`
       SELECT COUNT(*) as count FROM polina_providers
@@ -337,10 +337,10 @@ export async function checkProvidersTable() {
 export async function checkDatabaseConnection() {
   try {
     console.log('Checking database connection...');
-    console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'exists' : 'missing');
+    console.log('POSTGRES_URL:', process.env.POSTGRES_URL ? 'exists' : 'missing');
     
     // Проверяем структуру таблицы
-    const tableInfo = await sql`
+    const tableInfo = await db`
       SELECT column_name, data_type 
       FROM information_schema.columns 
       WHERE table_name = 'polina_providers'
@@ -348,7 +348,7 @@ export async function checkDatabaseConnection() {
     console.log('Table structure:', tableInfo.rows);
 
     // Проверяем наличие данных
-    const providers = await sql`
+    const providers = await db`
       SELECT * FROM polina_providers
     `;
     console.log('All providers:', providers.rows);
