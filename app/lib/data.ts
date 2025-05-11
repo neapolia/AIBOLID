@@ -1,4 +1,4 @@
-import postgres from "postgres";
+import postgres, { Row } from "postgres";
 import {
   FormattedProviders,
   FormattedStorage,
@@ -9,6 +9,19 @@ import {
 } from "./definitions";
 
 const sql = postgres(process.env.POSTGRES_URL!);
+
+type ProviderRow = {
+  id: string | number;
+  name: string;
+};
+
+type ProductRow = {
+  id: string | number;
+  name: string;
+  provider_id: string | number;
+  price: number | string;
+  article: string;
+};
 
 export async function fetchLatestInvoices() {
   try {
@@ -199,7 +212,7 @@ export async function fetchProviders() {
     const providers = await sql`
       SELECT id, name FROM polina_providers ORDER BY name
     `;
-    return (Array.isArray(providers) ? providers : []).map((p: any) => ({
+    return (Array.isArray(providers) ? providers : []).map((p: Row) => ({
       id: String(p.id),
       name: String(p.name),
     }));
@@ -215,7 +228,7 @@ export async function fetchProviderProducts(providerId: string) {
       SELECT * FROM polina_products
       WHERE provider_id = ${providerId}
     `;
-    return (Array.isArray(products) ? products : []).map((p: any) => ({
+    return (Array.isArray(products) ? products : []).map((p: Row) => ({
       id: String(p.id),
       name: String(p.name),
       provider_id: String(p.provider_id),
