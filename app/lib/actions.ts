@@ -33,6 +33,8 @@ export async function createInvoice({ providerId, products, material }: CreateIn
   }
 
   try {
+    console.log('Creating invoice with params:', { providerId, products, material });
+
     // Проверяем, нет ли уже такого заказа
     const existingInvoice = await sql`
       SELECT id FROM polina_invoices 
@@ -42,9 +44,11 @@ export async function createInvoice({ providerId, products, material }: CreateIn
     `;
 
     if (existingInvoice && existingInvoice.length > 0) {
+      console.log('Found existing invoice:', existingInvoice);
       return { success: false, error: 'Заказ уже создан' };
     }
 
+    // Создаем заказ
     const result = await sql`
       INSERT INTO polina_invoices (
         provider_id,
@@ -52,23 +56,32 @@ export async function createInvoice({ providerId, products, material }: CreateIn
         payment_status,
         material_name,
         material_price,
-        is_auto_order
+        is_auto_order,
+        created_at
       ) VALUES (
         ${providerId},
         'pending',
         'pending',
         ${material?.name || null},
         ${material?.price || null},
-        false
+        false,
+        ${new Date().toISOString()}
       )
       RETURNING id;
     `;
 
+    console.log('Created invoice with result:', result);
+
+    if (!result || result.length === 0) {
+      throw new Error('Failed to create invoice - no ID returned');
+    }
+
     const invoiceId = result[0].id;
 
-    // Insert products
+    // Добавляем продукты
     for (const [productId, count] of Object.entries(products)) {
       if (count > 0) {
+        console.log('Adding product to invoice:', { productId, count });
         await sql`
           INSERT INTO polina_invoices_products (
             invoice_id,
@@ -87,7 +100,7 @@ export async function createInvoice({ providerId, products, material }: CreateIn
     return { success: true, invoiceId };
   } catch (error) {
     console.error('Error creating invoice:', error);
-    return { success: false, error: 'Failed to create invoice' };
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to create invoice' };
   }
 }
 

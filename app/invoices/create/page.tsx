@@ -27,6 +27,7 @@ function CreateInvoiceContent() {
     article: string;
   }> | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProviders = async () => {
@@ -59,9 +60,11 @@ function CreateInvoiceContent() {
     }
   }, [searchParams]);
 
-  const handleCreateInvoice = async (products: Record<string, number>) => {
+  const handleSubmit = async (products: Record<string, number>) => {
+    setIsSubmitting(true);
+    setError(null);
     try {
-      setIsSubmitting(true);
+      console.log('Submitting order with products:', products);
       const providerId = searchParams.get('providerId');
       if (!providerId) {
         throw new Error('Provider ID is required');
@@ -70,20 +73,19 @@ function CreateInvoiceContent() {
       const result = await createInvoice({
         providerId,
         products,
-        material: selectedMaterial
       });
+      console.log('Create invoice result:', result);
 
-      if (result.success) {
-        setShowSuccess(true);
-        setTimeout(() => {
-          router.push('/dashboard/approve');
-        }, 2000);
-      } else {
-        throw new Error(result.error || 'Failed to create invoice');
+      if (!result.success) {
+        setError(result.error || 'Ошибка при создании заказа');
+        return;
       }
+
+      // Перенаправляем на страницу подтверждения
+      router.push('/dashboard/approve');
     } catch (error) {
-      console.error('Error creating invoice:', error);
-      alert('Failed to create invoice. Please try again.');
+      console.error('Error submitting order:', error);
+      setError('Произошла ошибка при создании заказа');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,8 +103,9 @@ function CreateInvoiceContent() {
           providerId={searchParams.get('providerId')}
           providers={providers}
           products={products}
-          onSubmit={handleCreateInvoice}
+          onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
+          error={error}
         />
       )}
     </div>
