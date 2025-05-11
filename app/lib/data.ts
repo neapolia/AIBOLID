@@ -8,7 +8,16 @@ import {
   Product,
 } from "./definitions";
 
-const sql = postgres(process.env.POSTGRES_URL!);
+if (!process.env.POSTGRES_URL) {
+  console.error('POSTGRES_URL is not defined in environment variables');
+}
+
+const sql = postgres(process.env.POSTGRES_URL!, {
+  ssl: 'require',
+  max: 1,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 type ProviderRow = {
   id: string | number;
@@ -209,6 +218,9 @@ export async function fetchFilteredStorage(query: string) {
 
 export async function fetchProviders() {
   try {
+    if (!process.env.POSTGRES_URL) {
+      throw new Error('POSTGRES_URL is not defined');
+    }
     console.log('Fetching providers...');
     const providers = await sql`
       SELECT id, name FROM polina_providers ORDER BY name
@@ -222,6 +234,9 @@ export async function fetchProviders() {
     return formattedProviders;
   } catch (error) {
     console.error("DB (fetchProviders):", error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
     return [];
   }
 }
@@ -247,6 +262,9 @@ export async function fetchProviderProducts(providerId: string) {
 
 export async function checkProvidersTable() {
   try {
+    if (!process.env.POSTGRES_URL) {
+      throw new Error('POSTGRES_URL is not defined');
+    }
     const result = await sql`
       SELECT COUNT(*) as count FROM polina_providers
     `;
@@ -254,6 +272,9 @@ export async function checkProvidersTable() {
     return Number(result[0].count);
   } catch (error) {
     console.error("DB (checkProvidersTable):", error);
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+    }
     return 0;
   }
 }
