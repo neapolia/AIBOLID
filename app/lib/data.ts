@@ -196,28 +196,34 @@ export async function fetchFilteredStorage(query: string) {
 
 export async function fetchProviders() {
   try {
-    const providers = await sql<Omit<FormattedProviders, "inn" | "phone" | "site">[]>`
-      SELECT id, name 
-      FROM polina_providers 
-      ORDER BY name ASC
+    const providers = await sql`
+      SELECT id, name FROM polina_providers ORDER BY name
     `;
-    return Array.from(providers);
+    return (Array.isArray(providers) ? providers : []).map((p: any) => ({
+      id: String(p.id),
+      name: String(p.name),
+    }));
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("DB (fetchProviders):", error);
     return [];
   }
 }
 
 export async function fetchProviderProducts(providerId: string) {
   try {
-    const products = await sql<Product[]>`
+    const products = await sql`
       SELECT * FROM polina_products
       WHERE provider_id = ${providerId}
     `;
-
-    return Array.from(products);
+    return (Array.isArray(products) ? products : []).map((p: any) => ({
+      id: String(p.id),
+      name: String(p.name),
+      provider_id: String(p.provider_id),
+      price: Number(p.price),
+      article: String(p.article),
+    }));
   } catch (error) {
     console.error("Database Error:", error);
-    throw new Error("Failed to fetch storage data.");
+    return [];
   }
 }

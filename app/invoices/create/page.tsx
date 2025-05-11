@@ -18,15 +18,20 @@ function CreateInvoiceContent() {
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [providers, setProviders] = useState<Omit<FormattedProviders, "inn" | "phone" | "site">[]>([]);
-  const [products, setProducts] = useState<Product[] | null>(null);
+  const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([]);
+  const [products, setProducts] = useState<Array<{
+    id: string;
+    name: string;
+    provider_id: string;
+    price: number;
+    article: string;
+  }> | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
   useEffect(() => {
     const loadProviders = async () => {
       console.log('Loading providers...');
       const data = await fetchProviders();
-      console.log('Loaded providers:', data);
       setProviders(data);
     };
     loadProviders();
@@ -40,6 +45,8 @@ function CreateInvoiceContent() {
         setProducts(data);
       };
       loadProducts();
+    } else {
+      setProducts(null);
     }
   }, [searchParams]);
 
